@@ -51,7 +51,7 @@ const createMockRes = () => {
   return res;
 };
 
-const TEST_USER_ID = `test-user-p1s3-${Date.now()}`;
+const TEST_USER_ID = '00000000-0000-0000-0000-000000000088';
 const TEST_USER_EMAIL = `test-p1s3-${Date.now()}@example.com`;
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -317,8 +317,13 @@ async function run() {
     await pool.connect(); // verify connection first
 
     // Insert a minimal test user into public.users for FK constraint
-    // (uses raw SQL — does not invoke Supabase auth)
     try {
+      await pool.query(
+        `INSERT INTO auth.users (id, email, raw_app_meta_data, raw_user_meta_data, aud, role)
+         VALUES ($1, $2, '{}', '{}', 'authenticated', 'authenticated')
+         ON CONFLICT (id) DO NOTHING`,
+        [TEST_USER_ID, TEST_USER_EMAIL]
+      );
       await pool.query(
         `INSERT INTO public.users (id, email, name, role, created_at, updated_at)
          VALUES ($1, $2, $3, 'visitor', NOW(), NOW())

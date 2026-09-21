@@ -17,7 +17,15 @@ import type { DbPlan } from '../providers/payment/plan-pricing';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type DbSubscriptionStatus = 'pending' | 'active' | 'cancelled' | 'expired';
+export type DbSubscriptionStatus =
+  | 'pending'
+  | 'active'
+  | 'pending_renewal'
+  | 'cancelled'
+  | 'lapsed'
+  | 'expired';
+
+export const SUBSCRIPTION_RENEWAL_WINDOW_DAYS = 7;
 
 export interface CreateSubscriptionParams {
   userId: string;
@@ -69,14 +77,14 @@ type DbClient = PoolClient | Pool;
  *   idx_subscriptions_user_active ON public.subscriptions (user_id) WHERE (status = 'active')
  *
  * Strategy for status = 'active':
- *   1. If user has an existing active row → UPDATE it (plan change / renewal)
- *   2. Else if user has any row (pending/cancelled/expired) → UPDATE most recent
+ *   1. If user has an existing active or pending_renewal row → UPDATE it (plan change / renewal)
+ *   2. Else if user has any row (pending/cancelled/lapsed/expired) → UPDATE most recent
  *   3. Else → INSERT new row
  *
- * Strategy for non-active status (cancelled / expired / pending):
- *   1. If user has an active row → UPDATE it to the new status
+ * Strategy for non-active status:
+ *   1. If user has an active or pending_renewal row → UPDATE it to the new status
  *   2. Else if user has any row → UPDATE most recent
- *   3. Else → INSERT (edge case)
+ *   3. Else → INSERT
  */
 export async function createOrUpdateSubscription(
   params: CreateSubscriptionParams,
@@ -89,15 +97,15 @@ export async function createOrUpdateSubscription(
 
   const { userId, dbPlan, status, startedAt, expiresAt, cancelledAt } = params;
 
-  // Check for existing active subscription
-  const existingActive = await dbClient.query(
-    'SELECT id FROM public.subscriptions WHERE user_id = $1 AND status = $2',
-    [userId, 'active']
+  // Check for existing active or pending_renewal subscription
+  const existingActiveOrRenewal = await dbClient.query(
+    'SELECT id FROM public.subscriptions WHERE user_id = $1 AND status IN (\'active\', \'pending_renewal\') LIMIT 1',
+    [userId]
   );
 
   if (status === 'active') {
-    if (existingActive.rows.length > 0) {
-      // UPDATE existing active subscription
+    if (existingActiveOrRenewal.rows.length > 0) {
+      // UPDATE existing active/pending_renewal subscription
       const result = await dbClient.query(
         `UPDATE public.subscriptions
            SET plan        = $1,
@@ -108,7 +116,7 @@ export async function createOrUpdateSubscription(
                updated_at  = NOW()
          WHERE id = $5
          RETURNING id, user_id, plan, status, started_at, expires_at, cancelled_at, created_at, updated_at`,
-        [dbPlan, status, startedAt, expiresAt, existingActive.rows[0].id]
+        [dbPlan, status, startedAt, expiresAt, existingActiveOrRenewal.rows[0].id]
       );
       return mapRow(result.rows[0]);
     }
@@ -150,7 +158,7 @@ export async function createOrUpdateSubscription(
 
   } else {
     // Non-active status update
-    if (existingActive.rows.length > 0) {
+    if (existingActiveOrRenewal.rows.length > 0) {
       const result = await dbClient.query(
         `UPDATE public.subscriptions
            SET status       = $1,
@@ -158,7 +166,7 @@ export async function createOrUpdateSubscription(
                updated_at   = NOW()
          WHERE id = $3
          RETURNING id, user_id, plan, status, started_at, expires_at, cancelled_at, created_at, updated_at`,
-        [status, cancelledAt ?? null, existingActive.rows[0].id]
+        [status, cancelledAt ?? null, existingActiveOrRenewal.rows[0].id]
       );
       return mapRow(result.rows[0]);
     }
@@ -203,9 +211,219 @@ export async function getActiveSubscription(userId: string): Promise<Subscriptio
   const result = await pool.query(
     `SELECT id, user_id, plan, status, started_at, expires_at, cancelled_at, created_at, updated_at
        FROM public.subscriptions
-      WHERE user_id = $1 AND status = 'active'
+      WHERE user_id = $1 AND status IN ('active', 'pending_renewal')
+      ORDER BY updated_at DESC
       LIMIT 1`,
     [userId]
   );
   return result.rows.length > 0 ? mapRow(result.rows[0]) : null;
+}
+
+/**
+ * Returns the user's most recent subscription record of any status, or null if never subscribed.
+ */
+export async function getUserSubscription(userId: string): Promise<SubscriptionRecord | null> {
+  const result = await pool.query(
+    `SELECT id, user_id, plan, status, started_at, expires_at, cancelled_at, created_at, updated_at
+       FROM public.subscriptions
+      WHERE user_id = $1
+      ORDER BY updated_at DESC
+      LIMIT 1`,
+    [userId]
+  );
+  return result.rows.length > 0 ? mapRow(result.rows[0]) : null;
+}
+
+/**
+ * Checks whether the user currently has active subscriber access.
+ *
+ * Requirements for active access:
+ * 1. An existing subscription record exists in public.subscriptions
+ * 2. status IN ('active', 'pending_renewal') OR (status = 'cancelled' AND expires_at > NOW())
+ * 3. expires_at > NOW() (strict non-expired check)
+ *
+ * If status is lapsed, expired, or pending -> returns false.
+ */
+export async function hasActiveSubscription(userId: string): Promise<boolean> {
+  const sub = await getUserSubscription(userId);
+  if (!sub) return false;
+
+  const now = new Date();
+  const isNotExpired = new Date(sub.expiresAt) > now;
+
+  if (!isNotExpired) {
+    return false;
+  }
+
+  // Active or pending_renewal within validity window grants access
+  if (sub.status === 'active' || sub.status === 'pending_renewal') {
+    return true;
+  }
+
+  // Cancelled subscriptions retain access until end-of-period
+  if (sub.status === 'cancelled' && isNotExpired) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Cancels an active or pending_renewal subscription.
+ *
+ * Sets status = 'cancelled' and cancelled_at = NOW().
+ * Preserves expires_at so access remains valid until end-of-period.
+ * Throws if no active subscription exists or if already cancelled/lapsed.
+ */
+export async function cancelSubscription(userId: string): Promise<SubscriptionRecord> {
+  const sub = await getUserSubscription(userId);
+  if (!sub) {
+    throw new Error('No subscription found for user.');
+  }
+
+  if (sub.status === 'cancelled') {
+    throw new Error('Subscription is already cancelled.');
+  }
+
+  if (sub.status === 'lapsed' || sub.status === 'expired') {
+    throw new Error('Cannot cancel a lapsed or expired subscription.');
+  }
+
+  const result = await pool.query(
+    `UPDATE public.subscriptions
+        SET status       = 'cancelled',
+            cancelled_at = NOW(),
+            updated_at   = NOW()
+      WHERE id = $1
+      RETURNING id, user_id, plan, status, started_at, expires_at, cancelled_at, created_at, updated_at`,
+    [sub.id]
+  );
+
+  return mapRow(result.rows[0]);
+}
+
+/**
+ * Reactivates a cancelled subscription before its expires_at has passed.
+ *
+ * Transitions status: 'cancelled' -> 'active'.
+ * Clears cancelled_at.
+ * Throws if subscription is already active, not cancelled, or has already lapsed.
+ */
+export async function reactivateSubscription(userId: string): Promise<SubscriptionRecord> {
+  const sub = await getUserSubscription(userId);
+  if (!sub) {
+    throw new Error('No subscription found for user.');
+  }
+
+  if (sub.status === 'active' || sub.status === 'pending_renewal') {
+    throw new Error('Subscription is already active.');
+  }
+
+  if (sub.status !== 'cancelled') {
+    throw new Error(`Cannot reactivate subscription with status "${sub.status}".`);
+  }
+
+  const now = new Date();
+  if (new Date(sub.expiresAt) <= now) {
+    throw new Error('Subscription has already expired and cannot be reactivated. Please start a new subscription.');
+  }
+
+  const result = await pool.query(
+    `UPDATE public.subscriptions
+        SET status       = 'active',
+            cancelled_at = NULL,
+            updated_at   = NOW()
+      WHERE id = $1
+      RETURNING id, user_id, plan, status, started_at, expires_at, cancelled_at, created_at, updated_at`,
+    [sub.id]
+  );
+
+  return mapRow(result.rows[0]);
+}
+
+/**
+ * Renews an existing subscription by extending expires_at and ensuring status is 'active'.
+ *
+ * If plan is supplied, updates the plan.
+ * Calculates new expires_at based on current expires_at (or NOW() if already in the past).
+ */
+export async function renewSubscription(
+  userId: string,
+  plan?: 'monthly' | 'yearly'
+): Promise<SubscriptionRecord> {
+  const sub = await getUserSubscription(userId);
+  if (!sub) {
+    throw new Error('No subscription found to renew.');
+  }
+
+  const targetPlan = plan ?? (sub.plan === 'annual' ? 'yearly' : 'monthly');
+  const dbPlan: DbPlan = targetPlan === 'yearly' ? 'annual' : 'monthly';
+
+  // Base date for extension: if current expiresAt is in future, extend from expiresAt; otherwise extend from NOW()
+  const now = new Date();
+  const currentExpiry = new Date(sub.expiresAt);
+  const baseDate = currentExpiry > now ? currentExpiry : now;
+
+  const newExpiresAt = new Date(baseDate);
+  if (dbPlan === 'monthly') {
+    newExpiresAt.setMonth(newExpiresAt.getMonth() + 1);
+  } else {
+    newExpiresAt.setFullYear(newExpiresAt.getFullYear() + 1);
+  }
+
+  const result = await pool.query(
+    `UPDATE public.subscriptions
+        SET plan        = $1,
+            status      = 'active',
+            expires_at  = $2,
+            cancelled_at = NULL,
+            updated_at  = NOW()
+      WHERE id = $3
+      RETURNING id, user_id, plan, status, started_at, expires_at, cancelled_at, created_at, updated_at`,
+    [dbPlan, newExpiresAt, sub.id]
+  );
+
+  return mapRow(result.rows[0]);
+}
+
+/**
+ * Scans subscriptions nearing expiration (within SUBSCRIPTION_RENEWAL_WINDOW_DAYS)
+ * and marks active subscriptions as 'pending_renewal'.
+ */
+export async function applyPendingRenewalStatus(userId?: string): Promise<number> {
+  let queryText = `
+    UPDATE public.subscriptions
+       SET status     = 'pending_renewal',
+           updated_at = NOW()
+     WHERE status = 'active'
+       AND expires_at > NOW()
+       AND expires_at <= NOW() + ($1 || ' days')::interval
+  `;
+  const params: unknown[] = [SUBSCRIPTION_RENEWAL_WINDOW_DAYS];
+
+  if (userId) {
+    queryText += ` AND user_id = $2`;
+    params.push(userId);
+  }
+
+  const result = await pool.query(queryText, params);
+  return result.rowCount ?? 0;
+}
+
+/**
+ * Bulk updates subscriptions whose expires_at has passed to 'lapsed'.
+ *
+ * Targets: 'active', 'pending_renewal', and 'cancelled' where expires_at <= NOW().
+ * Returns the number of lapsed subscriptions updated.
+ */
+export async function markLapsedSubscriptions(): Promise<number> {
+  const result = await pool.query(
+    `UPDATE public.subscriptions
+        SET status     = 'lapsed',
+            updated_at = NOW()
+      WHERE status IN ('active', 'pending_renewal', 'cancelled')
+        AND expires_at <= NOW()`
+  );
+
+  return result.rowCount ?? 0;
 }

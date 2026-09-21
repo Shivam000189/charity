@@ -49,6 +49,9 @@ export const AdminLayout: React.FC = () => {
           <NavLink to={ROUTES.ADMIN_PAYOUTS} className={adminNavClass}>
             Payouts
           </NavLink>
+          <NavLink to={ROUTES.ADMIN_REPORTS} className={adminNavClass}>
+            Reports
+          </NavLink>
         </nav>
       </div>
 

@@ -35,6 +35,8 @@ export const requireRole = (...allowedRoles: UserRole[]) => {
 export const requireAdmin = requireRole('admin');
 
 /**
- * Convenience authorization helper for subscriber-accessible routes (accessible to subscriber and admin).
+ * Authorization helper for subscriber-accessible routes.
+ * Re-exported from subscription.middleware.ts to enforce DB subscription status.
  */
-export const requireSubscriber = requireRole('subscriber', 'admin');
+export { requireSubscriber } from './subscription.middleware';
+

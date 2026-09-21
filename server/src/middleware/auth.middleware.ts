@@ -82,3 +82,40 @@ export const requireAuth = async (
     });
   }
 };
+
+/**
+ * Optional authentication: Populates req.user if a valid Bearer token is present,
+ * but allows guest/unauthenticated requests to proceed without error.
+ */
+export const optionalAuth = async (
+  req: Request,
+  _res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+
+  const token = authHeader.split(' ')[1]?.trim();
+  if (!token) {
+    return next();
+  }
+
+  try {
+    const { data } = await supabase.auth.getUser(token);
+    if (data?.user) {
+      const userRes = await pool.query(
+        'SELECT id, email, name, role FROM public.users WHERE id = $1 AND deleted_at IS NULL',
+        [data.user.id]
+      );
+      if (userRes.rows.length > 0) {
+        req.user = userRes.rows[0];
+      }
+    }
+  } catch {
+    // Ignore error for optional auth
+  }
+
+  next();
+};

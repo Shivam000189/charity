@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
+import { Button } from '../common/Button';
 
 export const LoginForm: React.FC<{ onToggleSignup: () => void }> = ({ onToggleSignup }) => {
   const { signIn } = useAuth();
@@ -15,66 +16,75 @@ export const LoginForm: React.FC<{ onToggleSignup: () => void }> = ({ onToggleSi
 
     const res = await signIn(email, password);
     if (!res.success) {
-      setErrorMsg(res.error || 'Failed to sign in');
+      setErrorMsg(res.error || 'Invalid credentials or user not found');
     }
     setLoading(false);
   };
 
   return (
-    <div className="w-full max-w-md p-6 bg-white dark:bg-slate-900 rounded-xl shadow-md border border-slate-200 dark:border-slate-800">
-      <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-2 text-center">Welcome Back</h2>
-      <p className="text-sm text-slate-600 dark:text-slate-400 mb-6 text-center">Log in to your Digital Hero account</p>
+    <div className="w-full max-w-md p-6 sm:p-8 bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 animate-fade-in">
+      <div className="text-center space-y-1 mb-6">
+        <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Welcome Back</h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400">Sign in to your verified subscriber portal</p>
+      </div>
 
       {errorMsg && (
-        <div className="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-950 dark:text-red-300">
+        <div className="p-3 mb-5 text-xs font-semibold text-rose-700 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 rounded-xl">
           {errorMsg}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
+          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+            Email Address
+          </label>
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-transparent text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
             placeholder="you@example.com"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Password</label>
+          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+            Password
+          </label>
           <input
             type="password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-transparent text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
             placeholder="••••••••"
           />
         </div>
 
-        <button
+        <Button
           type="submit"
-          disabled={loading}
-          className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium rounded-lg transition-colors"
+          variant="primary"
+          size="md"
+          isLoading={loading}
+          loadingText="Signing In..."
+          className="w-full mt-2"
         >
-          {loading ? 'Logging in...' : 'Sign In'}
-        </button>
+          Sign In
+        </Button>
       </form>
 
-      <p className="mt-4 text-sm text-center text-slate-600 dark:text-slate-400">
+      <div className="mt-6 pt-5 text-center border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500">
         Don&apos;t have an account?{' '}
         <button
           type="button"
           onClick={onToggleSignup}
-          className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+          className="font-bold text-purple-600 dark:text-purple-400 hover:underline cursor-pointer"
         >
-          Sign up
+          Create one now
         </button>
-      </p>
+      </div>
     </div>
   );
 };

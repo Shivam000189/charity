@@ -7,11 +7,17 @@ Digital Hero is a full-stack web platform built with React 19, Express, TypeScri
 ## 1. Project Status
 
 ```text
-Foundation Status: Steps 1–10 COMPLETE & VERIFIED ✅
-Current Phase:     Ready for Feature Development (Phases A–J)
+Phases 0–6 Status: COMPLETE & VERIFIED ✅
+- Phase 0: Architecture, Database, Auth & RBAC Foundation (Steps 1–10)
+- Phase 1: Subscription Lifecycle & Mock Access Control (Steps 1–5)
+- Phase 2: Stableford Score Management & Rolling-5 Engine (Steps 1–5)
+- Phase 3: Charity Directory, Spotlight & Allocation (Steps 1–5)
+- Phase 4: Draw & Prize Engine, Rollovers & Zero-Leakage (Steps 1–5)
+- Phase 5: Winner Verification, Storage & Admin Dashboards (Steps 1–5)
+- Phase 6: UI/UX Polish, Accessibility, Motion & Deployment (Steps 1–5)
 ```
 
-The core foundation—including database schema migrations, Supabase authentication, 3-tier RBAC authorization, routing, environment validation, and production deployment preparation—is complete, tested, and locked.
+The application is completely implemented, hardened, and verified with 100% test pass rate across all modules.
 
 ---
 
@@ -132,19 +138,21 @@ All automated tests are located in `server/src/test/`:
 ```bash
 cd server
 
-npm run test:stripe     # Verifies Stripe checkout creation, plan mapping, and error handling
-npm run test:onboarding # 12-point subscriber onboarding verification suite
-npm run test:config     # Validates env parsing & audits dist/ for secret leakage
-npm run test:schema     # Verifies all 8 database tables, UUID PKs, and constraints
-npm run test:auth       # 12-point authentication test suite
-npm run test:rbac       # 12-point RBAC authorization test suite
+npm run test:auth       # 12-point authentication test suite (Phase 0)
+npm run test:rbac       # 12-point RBAC authorization test suite (Phase 0)
+npm run test:schema     # Verifies all 8 database tables, UUID PKs, and constraints (Phase 0)
+npm run test:config     # Validates env parsing & audits dist/ for secret leakage (Phase 0)
+npm run test:lifecycle  # 10-point subscription lifecycle & access control suite (Phase 1)
+npm run test:scores     # 29-point score management & rolling-5 eviction suite (Phase 2)
+npm run test:charity    # 22-point charity directory, CRUD & donation suite (Phase 3)
+npm run test:draws      # 20-point draw engine, rollovers & math suite (Phase 4)
+npm run test:phase5     # 22-point winner verification, proof storage & dashboards suite (Phase 5)
 ```
 
-Frontend build and lint verification:
+Frontend build, lint, and production check:
 ```bash
 cd client
-npm run lint            # ESLint check (0 errors, 0 warnings)
-npm run build           # Production bundle build
+npm run build           # Type check & Vite production build (tsc -b && vite build)
 ```
 
 ---

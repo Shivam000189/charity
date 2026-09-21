@@ -99,7 +99,7 @@ export const CheckoutPreviewPage: React.FC = () => {
             Included with your membership:
           </h3>
           <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
-            {selectedPlan.features.map((feature, idx) => (
+            {selectedPlan.features.map((feature: string, idx: number) => (
               <li key={idx} className="flex items-center gap-2">
                 <svg className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />

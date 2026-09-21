@@ -196,14 +196,17 @@ export const MockCheckoutPage: React.FC = () => {
       // Clear onboarding state — payment complete
       clearSelection();
 
+      const subData = paymentRes.subscription as Record<string, unknown> | undefined;
+      const payData = paymentRes.payment as Record<string, unknown> | undefined;
+
       // Navigate to success page with subscription data in state
       navigate(ROUTES.SUBSCRIPTION_SUCCESS, {
         state: {
           plan: selectedPlan.id,
           planName: selectedPlan.name,
-          subscriptionStatus: paymentRes.subscription.status,
-          expiresAt: paymentRes.subscription.expiresAt,
-          transactionId: paymentRes.payment?.transactionId,
+          subscriptionStatus: subData?.status as string | undefined,
+          expiresAt: subData?.expiresAt as string | undefined,
+          transactionId: payData?.transactionId as string | undefined,
         },
         replace: true,
       });

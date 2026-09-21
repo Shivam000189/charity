@@ -9,11 +9,14 @@ import { AdminLayout } from '../layouts/AdminLayout';
 // Route Guards
 import { ProtectedRoute } from '../components/routing/ProtectedRoute';
 import { RoleRoute } from '../components/routing/RoleRoute';
+import { SubscriptionRoute } from '../components/routing/SubscriptionRoute';
 
 // Public Pages
 import { HomePage } from '../pages/public/HomePage';
 import { AboutPage } from '../pages/public/AboutPage';
 import { CharitiesPage } from '../pages/public/CharitiesPage';
+import { CharityDetailPage } from '../pages/public/CharityDetailPage';
+import { CharityDonatePage } from '../pages/public/CharityDonatePage';
 import { DrawsPage } from '../pages/public/DrawsPage';
 
 // Auth Pages
@@ -43,6 +46,7 @@ import { AdminCharitiesPage } from '../pages/admin/AdminCharitiesPage';
 import { AdminDrawsPage } from '../pages/admin/AdminDrawsPage';
 import { AdminWinnersPage } from '../pages/admin/AdminWinnersPage';
 import { AdminPayoutsPage } from '../pages/admin/AdminPayoutsPage';
+import { AdminReportsPage } from '../pages/admin/AdminReportsPage';
 
 // Error Pages
 import { UnauthorizedPage } from '../pages/errors/UnauthorizedPage';
@@ -56,6 +60,8 @@ export const AppRouter: React.FC = () => {
         <Route path={ROUTES.HOME} element={<HomePage />} />
         <Route path={ROUTES.ABOUT} element={<AboutPage />} />
         <Route path={ROUTES.CHARITIES} element={<CharitiesPage />} />
+        <Route path={ROUTES.CHARITY_DETAILS} element={<CharityDetailPage />} />
+        <Route path={ROUTES.CHARITY_DONATE} element={<CharityDonatePage />} />
         <Route path={ROUTES.DRAWS} element={<DrawsPage />} />
         <Route path={ROUTES.LOGIN} element={<LoginPage />} />
         <Route path={ROUTES.SIGNUP} element={<SignupPage />} />
@@ -65,6 +71,8 @@ export const AppRouter: React.FC = () => {
         <Route element={<ProtectedRoute />}>
           <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
           <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
+          <Route path={ROUTES.SUBSCRIPTION} element={<SubscriptionPage />} />
+          <Route path={ROUTES.SUBSCRIPTION_CHARITY} element={<SubscriptionPage />} />
           <Route path={ROUTES.ONBOARDING_PLAN} element={<PlanSelectionPage />} />
           <Route path={ROUTES.ONBOARDING_CHECKOUT} element={<CheckoutPreviewPage />} />
           <Route path={ROUTES.ONBOARDING_MOCK_CHECKOUT} element={<MockCheckoutPage />} />
@@ -72,9 +80,8 @@ export const AppRouter: React.FC = () => {
           <Route path={ROUTES.SUBSCRIPTION_CANCEL} element={<SubscriptionCancelPage />} />
         </Route>
 
-        {/* Subscriber Routes (Requires subscriber or admin role) */}
-        <Route element={<RoleRoute allowedRoles={['subscriber', 'admin']} />}>
-          <Route path={ROUTES.SUBSCRIPTION} element={<SubscriptionPage />} />
+        {/* Subscriber Routes (Requires active subscription or admin) */}
+        <Route element={<SubscriptionRoute />}>
           <Route path={ROUTES.MY_ENTRIES} element={<MyEntriesPage />} />
           <Route path={ROUTES.MY_WINNINGS} element={<MyWinningsPage />} />
         </Route>
@@ -88,6 +95,7 @@ export const AppRouter: React.FC = () => {
             <Route path={ROUTES.ADMIN_DRAWS} element={<AdminDrawsPage />} />
             <Route path={ROUTES.ADMIN_WINNERS} element={<AdminWinnersPage />} />
             <Route path={ROUTES.ADMIN_PAYOUTS} element={<AdminPayoutsPage />} />
+            <Route path={ROUTES.ADMIN_REPORTS} element={<AdminReportsPage />} />
           </Route>
         </Route>
 

@@ -6,7 +6,21 @@ import { pool, checkDatabaseConnection } from './config/database';
 import healthRoutes from './routes/health.routes';
 import authRoutes from './routes/auth.routes';
 import subscriptionRoutes from './routes/subscription.routes';
+import scoreRoutes from './routes/score.routes';
 import webhookRoutes from './routes/webhook.routes';
+import {
+  publicCharityRouter,
+  adminCharityRouter,
+  subscriptionCharityRouter,
+  donationRouter,
+} from './routes/charity.routes';
+import { publicDrawRouter, adminDrawRouter } from './routes/draw.routes';
+import {
+  winnerRouter,
+  adminWinnerRouter,
+  adminReportRouter,
+  adminUserRouter,
+} from './routes/winner.routes';
 
 export const app = express();
 export const httpServer = createServer(app);
@@ -72,7 +86,26 @@ app.use('/', healthRoutes);
 app.use('/api/auth', authRoutes);
 
 // Subscription routes
+app.use('/api/subscriptions/charity', subscriptionCharityRouter);
 app.use('/api/subscriptions', subscriptionRoutes);
+
+// Score routes (Phase 2)
+app.use('/api/scores', scoreRoutes);
+
+// Charity & Donation routes (Phase 3)
+app.use('/api/charities', publicCharityRouter);
+app.use('/api/admin/charities', adminCharityRouter);
+app.use('/api/donations', donationRouter);
+
+// Draw routes (Phase 4)
+app.use('/api/draws', publicDrawRouter);
+app.use('/api/admin/draws', adminDrawRouter);
+
+// Winner, Reports & Admin User routes (Phase 5)
+app.use('/api/winners', winnerRouter);
+app.use('/api/admin/winners', adminWinnerRouter);
+app.use('/api/admin/reports', adminReportRouter);
+app.use('/api/admin/users', adminUserRouter);
 
 // Root informational endpoint
 app.get(['/', '/api'], (_req: Request, res: Response) => {

@@ -6,6 +6,8 @@ export const ROUTES = {
   HOME: '/',
   ABOUT: '/about',
   CHARITIES: '/charities',
+  CHARITY_DETAILS: '/charities/:id',
+  CHARITY_DONATE: '/charities/:id/donate',
   DRAWS: '/draws',
   LOGIN: '/login',
   SIGNUP: '/signup',
@@ -21,6 +23,7 @@ export const ROUTES = {
 
   // Subscriber Routes
   SUBSCRIPTION: '/subscription',
+  SUBSCRIPTION_CHARITY: '/subscription/charity',
   SUBSCRIPTION_SUCCESS: '/subscription/success',
   SUBSCRIPTION_CANCEL: '/subscription/cancel',
   MY_ENTRIES: '/my-entries',
@@ -33,6 +36,7 @@ export const ROUTES = {
   ADMIN_DRAWS: '/admin/draws',
   ADMIN_WINNERS: '/admin/winners',
   ADMIN_PAYOUTS: '/admin/payouts',
+  ADMIN_REPORTS: '/admin/reports',
 
   // Error Routes
   UNAUTHORIZED: '/unauthorized',

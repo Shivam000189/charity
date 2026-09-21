@@ -1,48 +1,81 @@
-/**
- * Subscription Plan Types & Definitions for Digital Hero
- *
- * DEMO PRICING: Prices below are for development/testing only.
- * Update displayPrice values to match actual business pricing before production.
- */
+export type SubscriptionPlanId = 'monthly' | 'yearly';
+export type SubscriptionPlanType = SubscriptionPlanId;
 
-export type SubscriptionPlan = 'monthly' | 'yearly';
-export type SubscriptionPlanId = SubscriptionPlan;
+export type SubscriptionStatusType =
+  | 'pending'
+  | 'active'
+  | 'pending_renewal'
+  | 'cancelled'
+  | 'lapsed'
+  | 'expired';
 
 export interface PlanDetails {
   id: SubscriptionPlanId;
   name: string;
-  billingInterval: string;
+  price: string;
+  interval: string;
   displayPrice: string;
+  billingInterval: string;
   description: string;
   features: string[];
+  recommended?: boolean;
 }
 
-/** Demo pricing — matches backend PLAN_PRICING in plan-pricing.ts */
 export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanId, PlanDetails> = {
   monthly: {
     id: 'monthly',
-    name: 'Monthly Plan',
+    name: 'Monthly Hero',
+    price: '₹499',
+    interval: '/ month',
+    displayPrice: '₹499 / month',
     billingInterval: 'Billed monthly',
-    displayPrice: '₹499 / month',          // DEMO — update before production
-    description: 'Flexible month-to-month access to all subscriber draws, challenges, and charity impact.',
+    description: 'Flexible monthly subscription with complete lottery access and community contributions.',
     features: [
-      'Full access to all subscriber draws',
-      'Daily challenge participation & score recording',
-      'Direct charity contribution tracking',
-      'Cancel anytime',
+      'Unlimited entry to all daily community draws',
+      'Daily puzzle and leaderboard score multiplier',
+      'Direct revenue allocation to verified charity partners',
+      'Instant payout eligibility for verified winnings',
+      'Cancel anytime with access active until month end',
     ],
   },
   yearly: {
     id: 'yearly',
-    name: 'Yearly Plan',
-    billingInterval: 'Billed yearly',
-    displayPrice: '₹4,999 / year',         // DEMO — update before production
-    description: 'Annual subscriber membership with uninterrupted draw entries and maximum community support.',
+    name: 'Annual Champion',
+    price: '₹4,999',
+    interval: '/ year',
+    displayPrice: '₹4,999 / year',
+    billingInterval: 'Billed yearly (save ~17%)',
+    description: 'Year-round access at a 17% discounted annual rate with maximum community impact.',
+    recommended: true,
     features: [
-      'All Monthly Plan benefits included',
-      'Uninterrupted year-round draw entries',
-      'Continuous daily challenge streak tracking',
-      'Priority support and community hero badge',
+      'Everything included in the Monthly Hero plan',
+      'Save ₹989 compared to monthly billing (~17% discount)',
+      'Guaranteed bonus entries into milestone mega-draws',
+      'VIP recognition badge on community leaderboards',
+      'Dedicated priority payout and donor support channel',
     ],
   },
 };
+
+export interface SubscriptionData {
+  id: string;
+  plan: SubscriptionPlanType;
+  dbPlan: 'monthly' | 'annual';
+  status: SubscriptionStatusType;
+  startedAt: string;
+  expiresAt: string;
+  cancelledAt: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface SubscriptionContextType {
+  subscription: SubscriptionData | null;
+  hasAccess: boolean;
+  loading: boolean;
+  error: string | null;
+  refreshSubscription: () => Promise<void>;
+  cancelSubscription: () => Promise<void>;
+  reactivateSubscription: () => Promise<void>;
+  renewSubscription: (plan?: SubscriptionPlanType) => Promise<void>;
+}

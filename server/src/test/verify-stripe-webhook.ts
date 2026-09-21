@@ -145,7 +145,7 @@ async function runStripeWebhookVerification() {
             userId: testUserId,
             plan: 'monthly',
           },
-        } as Stripe.Checkout.Session,
+        } as unknown as Stripe.Checkout.Session,
       },
       livemode: false,
       pending_webhooks: 0,

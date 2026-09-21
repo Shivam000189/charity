@@ -18,7 +18,16 @@ import { Request, Response } from 'express';
 import '../types/auth'; // loads Express Request augmentation (req.user)
 import { paymentProvider } from '../providers/payment';
 import { mapPlanToDb, calculateExpiresAt } from '../providers/payment/plan-pricing';
-import { createOrUpdateSubscription } from '../services/subscription.service';
+import {
+  createOrUpdateSubscription,
+  getUserSubscription,
+  hasActiveSubscription,
+  cancelSubscription,
+  reactivateSubscription,
+  renewSubscription,
+  markLapsedSubscriptions,
+  applyPendingRenewalStatus,
+} from '../services/subscription.service';
 import type { SubscriptionPlan } from '../providers/payment/payment.provider';
 
 // ─── Validation ───────────────────────────────────────────────────────────────
@@ -245,3 +254,211 @@ export const processPaymentHandler = async (req: Request, res: Response): Promis
     });
   }
 };
+
+/**
+ * GET /api/subscriptions/me
+ *
+ * Retrieves the current authenticated user's subscription details and access status.
+ */
+export const getMySubscriptionHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      res.status(401).json({
+        success: false,
+        code: 'AUTH_REQUIRED',
+        error: 'Authentication required.',
+      });
+      return;
+    }
+
+    // Refresh pending renewal window status lazily if applicable
+    await applyPendingRenewalStatus(user.id);
+
+    const subscription = await getUserSubscription(user.id);
+    const hasAccess = await hasActiveSubscription(user.id);
+
+    if (!subscription) {
+      res.status(200).json({
+        success: true,
+        subscription: null,
+        hasAccess: user.role === 'admin',
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      subscription: {
+        id: subscription.id,
+        plan: subscription.plan === 'annual' ? 'yearly' : 'monthly',
+        dbPlan: subscription.plan,
+        status: subscription.status,
+        startedAt: subscription.startedAt,
+        expiresAt: subscription.expiresAt,
+        cancelledAt: subscription.cancelledAt,
+        createdAt: subscription.createdAt,
+        updatedAt: subscription.updatedAt,
+      },
+      hasAccess: hasAccess || user.role === 'admin',
+    });
+  } catch (err: unknown) {
+    console.error('[Subscription] getMySubscription error:', (err as Error).message);
+    res.status(500).json({
+      success: false,
+      code: 'FETCH_FAILED',
+      error: 'Failed to retrieve subscription information.',
+    });
+  }
+};
+
+/**
+ * POST /api/subscriptions/cancel
+ *
+ * Cancels user's subscription at period end (sets status='cancelled', preserves expires_at).
+ */
+export const cancelSubscriptionHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      res.status(401).json({
+        success: false,
+        code: 'AUTH_REQUIRED',
+        error: 'Authentication required.',
+      });
+      return;
+    }
+
+    const cancelledSub = await cancelSubscription(user.id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Subscription cancelled successfully. Access remains active until the end of your billing period.',
+      subscription: {
+        id: cancelledSub.id,
+        plan: cancelledSub.plan === 'annual' ? 'yearly' : 'monthly',
+        status: cancelledSub.status,
+        expiresAt: cancelledSub.expiresAt,
+        cancelledAt: cancelledSub.cancelledAt,
+      },
+      hasAccess: true,
+    });
+  } catch (err: unknown) {
+    const msg = (err as Error).message;
+    console.error('[Subscription] cancelSubscription error:', msg);
+    res.status(400).json({
+      success: false,
+      code: 'CANCEL_FAILED',
+      error: msg || 'Failed to cancel subscription.',
+    });
+  }
+};
+
+/**
+ * POST /api/subscriptions/reactivate
+ *
+ * Reactivates a cancelled subscription before expires_at has passed.
+ */
+export const reactivateSubscriptionHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      res.status(401).json({
+        success: false,
+        code: 'AUTH_REQUIRED',
+        error: 'Authentication required.',
+      });
+      return;
+    }
+
+    const reactivatedSub = await reactivateSubscription(user.id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Subscription reactivated successfully.',
+      subscription: {
+        id: reactivatedSub.id,
+        plan: reactivatedSub.plan === 'annual' ? 'yearly' : 'monthly',
+        status: reactivatedSub.status,
+        expiresAt: reactivatedSub.expiresAt,
+      },
+      hasAccess: true,
+    });
+  } catch (err: unknown) {
+    const msg = (err as Error).message;
+    console.error('[Subscription] reactivateSubscription error:', msg);
+    res.status(400).json({
+      success: false,
+      code: 'REACTIVATION_FAILED',
+      error: msg || 'Failed to reactivate subscription.',
+    });
+  }
+};
+
+/**
+ * POST /api/subscriptions/renew
+ *
+ * Renews an existing subscription, extending expires_at.
+ */
+export const renewSubscriptionHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      res.status(401).json({
+        success: false,
+        code: 'AUTH_REQUIRED',
+        error: 'Authentication required.',
+      });
+      return;
+    }
+
+    const body = (req.body || {}) as { plan?: string };
+    const plan = body.plan && isValidPlan(body.plan) ? body.plan : undefined;
+
+    const renewedSub = await renewSubscription(user.id, plan);
+
+    res.status(200).json({
+      success: true,
+      message: 'Subscription renewed successfully.',
+      subscription: {
+        id: renewedSub.id,
+        plan: renewedSub.plan === 'annual' ? 'yearly' : 'monthly',
+        status: renewedSub.status,
+        expiresAt: renewedSub.expiresAt,
+      },
+      hasAccess: true,
+    });
+  } catch (err: unknown) {
+    const msg = (err as Error).message;
+    console.error('[Subscription] renewSubscription error:', msg);
+    res.status(400).json({
+      success: false,
+      code: 'RENEWAL_FAILED',
+      error: msg || 'Failed to renew subscription.',
+    });
+  }
+};
+
+/**
+ * POST /api/subscriptions/admin/mark-lapsed
+ *
+ * Admin trigger to scan and mark expired subscriptions as lapsed.
+ */
+export const markLapsedHandler = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const lapsedCount = await markLapsedSubscriptions();
+    res.status(200).json({
+      success: true,
+      message: `Marked ${lapsedCount} subscriptions as lapsed.`,
+      lapsedCount,
+    });
+  } catch (err: unknown) {
+    console.error('[Subscription] markLapsed error:', (err as Error).message);
+    res.status(500).json({
+      success: false,
+      code: 'MARK_LAPSED_FAILED',
+      error: 'Failed to mark lapsed subscriptions.',
+    });
+  }
+};
+
