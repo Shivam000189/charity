@@ -8,7 +8,8 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "test:auth": "tsx src/test/verify-auth.ts",
-    "test:rbac": "tsx src/test/verify-rbac.ts"
+    "test:rbac": "tsx src/test/verify-rbac.ts",
+    "test:config": "tsx src/test/verify-config.ts"
   },
   "keywords": [],
   "author": "",

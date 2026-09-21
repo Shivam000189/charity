@@ -298,3 +298,123 @@ cd server
 npm run test:rbac
 ```
 
+---
+
+## Application Routing & Page Architecture (Step 7)
+
+### Route Architecture & Protection Matrix
+
+The frontend uses React Router to provide client-side navigation with layout hierarchies and role-based route guards.
+
+```text
+Application Router
+│
+├── Public Routes (Accessible to all users)
+│   ├── /                 → HomePage (Hero, features, CTA)
+│   ├── /about            → AboutPage (Mission & platform model)
+│   ├── /charities        → CharitiesPage (Charity listings scaffold)
+│   ├── /draws            → DrawsPage (Lottery draws schedule scaffold)
+│   ├── /login            → LoginPage (Composes existing LoginForm)
+│   ├── /signup           → SignupPage (Composes existing SignupForm)
+│   └── /unauthorized     → UnauthorizedPage (403 UX feedback)
+│
+├── Authenticated Routes (ProtectedRoute — Redirects to /login if unauthenticated)
+│   ├── /dashboard        → DashboardPage (User overview & quick links)
+│   └── /profile          → ProfilePage (UserProfileCard with token & live RBAC test tools)
+│
+├── Subscriber Routes (RoleRoute allowedRoles=['subscriber', 'admin'])
+│   ├── /subscription     → SubscriptionPage (Plan details scaffold)
+│   ├── /my-entries       → MyEntriesPage (Active draw entries scaffold)
+│   └── /my-winnings      → MyWinningsPage (Prize payouts scaffold)
+│
+├── Admin Routes (RoleRoute allowedRoles=['admin'] + AdminLayout)
+│   ├── /admin            → AdminDashboardPage (System overview scaffold)
+│   ├── /admin/users      → AdminUsersPage (User directory scaffold)
+│   ├── /admin/charities  → AdminCharitiesPage (Charity management scaffold)
+│   ├── /admin/draws      → AdminDrawsPage (Draw operations scaffold)
+│   ├── /admin/winners    → AdminWinnersPage (Winner audits scaffold)
+│   └── /admin/payouts    → AdminPayoutsPage (Payout batch processing scaffold)
+│
+└── Error Catch-All Route
+    └── *                 → NotFoundPage (404 Not Found)
+```
+
+### Route Protection Components
+* **`ProtectedRoute`**: Reusable guard verifying authentication via `useAuth()`. Shows accessible loading spinner during initial session hydration and redirects unauthenticated users to `/login` with preserved target location (`state: { from: location }`).
+* **`RoleRoute`**: Role-based guard verifying `allowedRoles: UserRole[]`. Redirects unauthenticated users to `/login` and authenticated users with insufficient permissions to `/unauthorized`.
+* **Important Security Note**: Frontend route guards serve purely as UX routing controls. All real security boundaries reside on the Express backend via `requireAuth` and `requireRole` middleware.
+
+### Layout Hierarchy
+* **`AppLayout`**: Wraps the application with a responsive `Header` (with desktop links, role-aware dropdowns, accessible mobile drawer) and standard `Footer`.
+* **`AdminLayout`**: Nested layout specifically for admin routes providing portal breadcrumbs and sub-navigation tabs (Overview, Users, Charities, Draws, Winners, Payouts).
+
+### API Client Foundation (`client/src/lib/api.ts`)
+* Reusable `api.get()`, `api.post()`, `api.put()`, `api.delete()` helper functions that automatically read the current Supabase session token (`supabase.auth.getSession()`) and attach `Authorization: Bearer <token>` to requests against `VITE_API_URL`.
+
+---
+
+## Environment & Configuration Management (Step 8)
+
+### Configuration Architecture
+The application uses strict, centralized environment modules on both client and server:
+
+```text
+Backend Execution
+  │
+  ▼
+server/src/config/env.ts
+  ├─ Validates PORT, NODE_ENV, CLIENT_URL, SUPABASE_URL, SUPABASE_SECRET_KEY, DATABASE_URL
+  ├─ Validates port bounds (1-65535) and URL protocols
+  ├─ Fails fast at startup if configuration is missing or malformed
+  └─ Exports typed `env` (never prints secrets in logs)
+
+Frontend Execution
+  │
+  ▼
+client/src/config/env.ts
+  ├─ Validates VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY, VITE_API_URL
+  ├─ Fails fast if required public variables are missing
+  └─ Exports typed `config` (consumed by supabase.ts, api.ts, AuthContext.tsx)
+```
+
+### Environment Variables Matrix
+
+| Variable | Scope | Secret | Required | Description | Example / Default |
+|---|:---:|:---:|:---:|---|---|
+| `PORT` | Backend | No | Optional | Express server HTTP listen port | `5000` |
+| `NODE_ENV` | Backend | No | Optional | Runtime environment mode | `development` / `production` / `test` |
+| `CLIENT_URL` | Backend | No | Optional | Allowed CORS origin(s) | `http://localhost:5173` |
+| `SUPABASE_URL` | Backend | No | **YES** | Supabase project API URL | `https://your-project.supabase.co` |
+| `SUPABASE_SECRET_KEY` | Backend | **YES** | **YES** | Privileged service role secret key | `your_supabase_secret_key` |
+| `DATABASE_URL` | Backend | **YES** | **YES** | Direct PostgreSQL connection string | `postgresql://postgres:...` |
+| `VITE_SUPABASE_URL` | Frontend | No | **YES** | Public Supabase project API URL | `https://your-project.supabase.co` |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Frontend | No | **YES** | Browser publishable key | `your_publishable_key` |
+| `VITE_API_URL` | Frontend | No | Optional | Base URL for backend Express endpoints | `http://localhost:5000/api` |
+
+### Security & Secret Isolation Rules
+1. **Never Expose Backend Secrets**: `SUPABASE_SECRET_KEY` and `DATABASE_URL` are strictly server-only. They must never be prefixed with `VITE_`, imported into frontend code, or bundled in browser assets.
+2. **Git Protection**: `.gitignore` strictly ignores all `.env`, `.env.local`, `client/.env*`, and `server/.env*` files containing secrets while tracking `.env.example` templates.
+3. **Automated Bundle Auditing**: Production builds are automatically audited by `server/src/test/verify-config.ts` to guarantee zero occurrences of backend secrets in `client/dist/`.
+
+### Vercel Deployment Settings
+When deploying to Vercel:
+* **Frontend Project Settings**:
+  * Set `VITE_SUPABASE_URL`
+  * Set `VITE_SUPABASE_PUBLISHABLE_KEY`
+  * Set `VITE_API_URL` to your production backend URL (e.g. `https://api.yourdomain.com/api`)
+* **Backend Project Settings / Serverless**:
+  * Set `PORT` (or let platform assign)
+  * Set `NODE_ENV=production`
+  * Set `CLIENT_URL` to your production frontend URL (e.g. `https://yourdomain.com`)
+  * Set `SUPABASE_URL`
+  * Set `SUPABASE_SECRET_KEY`
+  * Set `DATABASE_URL`
+
+### Running Configuration Verification Tests
+To run the 9-point environment validation and codebase/bundle secret audit:
+
+```bash
+cd server
+npm run test:config
+```
+

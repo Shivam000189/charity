@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../utils/supabase';
+import { config } from '../config/env';
 import type { UserProfile } from '../types/auth';
 import { AuthContext } from './auth-context-base';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = config.apiUrl;
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);

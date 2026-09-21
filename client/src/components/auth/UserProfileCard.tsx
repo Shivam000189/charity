@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
+import { config } from '../../config/env';
 
 export const UserProfileCard: React.FC = () => {
   const { user, profile, session, signOut, refreshProfile } = useAuth();
@@ -11,7 +12,7 @@ export const UserProfileCard: React.FC = () => {
     setTestingApi(true);
     setApiResponse(null);
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    const API_URL = config.apiUrl;
 
     try {
       const res = await fetch(`${API_URL}/auth/me`, {
@@ -34,7 +35,7 @@ export const UserProfileCard: React.FC = () => {
     setTestingApi(true);
     setApiResponse(null);
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    const API_URL = config.apiUrl;
 
     try {
       const res = await fetch(`${API_URL}/auth/test/${endpoint}`, {

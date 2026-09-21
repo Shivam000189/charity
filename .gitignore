@@ -1,10 +1,22 @@
 # Dependencies
 node_modules/
 
-# Environment files
+# Environment files (Local secrets must never be tracked)
 .env
 .env.local
 .env.*.local
+.env.development
+.env.production
+.env.test
+client/.env
+client/.env.local
+client/.env.*.local
+server/.env
+server/.env.local
+server/.env.*.local
+!.env.example
+!client/.env.example
+!server/.env.example
 
 # Build outputs
 dist/

@@ -23,12 +23,7 @@ const localOrigins = [
   'http://127.0.0.1:3000',
 ];
 
-const envOrigins = [
-  env.CLIENT_URL,
-  process.env.FRONTEND_URL,
-  process.env.CORS_ORIGINS,
-  process.env.CORS_ORIGIN,
-]
+const envOrigins = [env.CLIENT_URL]
   .filter(Boolean)
   .flatMap((val) => (val as string).split(','))
   .map((origin) => origin.trim().replace(/\/$/, ''))
