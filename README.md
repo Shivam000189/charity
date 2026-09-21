@@ -224,4 +224,77 @@ To run the verification suite:
 cd server
 npm run test:auth
 ```
+
+---
+
+## Authorization & Role-Based Access Control (Step 6)
+
+### Responsibilities
+* **Authentication (Step 5)**: *"Who is this user?"* (Supabase Auth verification)
+* **Authorization (Step 6)**: *"What is this user allowed to do?"* (`public.users.role` check)
+
+### Role Model
+The application defines three strictly typed roles:
+```ts
+export type UserRole = 'visitor' | 'subscriber' | 'admin';
 ```
+
+| Capability | Visitor | Subscriber | Admin |
+|---|:---:|:---:|:---:|
+| Public content | ✅ | ✅ | ✅ |
+| Authenticated profile | ✅ | ✅ | ✅ |
+| Subscriber features | ❌ | ✅ | ✅ |
+| Subscription management | ❌ | ✅ | ✅ |
+| Admin features & management | ❌ | ❌ | ✅ |
+
+### Request Pipeline & Middleware Ordering
+Authorization checks must **always** be executed after authentication middleware:
+
+```text
+Request
+  │
+  ▼
+requireAuth (verifies Supabase JWT -> populates req.user from public.users)
+  │
+  ▼
+requireRole('admin') / requireSubscriber / requireRole(...)
+  │
+  ▼
+Controller handler
+```
+
+### HTTP Status Code Semantics
+* `401 Unauthorized`: Missing, invalid, or expired authentication token.
+  ```json
+  { "success": false, "message": "Authentication required" }
+  ```
+* `403 Forbidden`: Authenticated user does not possess the required role.
+  ```json
+  { "success": false, "message": "Insufficient permissions" }
+  ```
+
+### Reusable Middleware Helpers
+* `requireRole(...roles: UserRole[])`: Base higher-order authorization middleware.
+* `requireAdmin`: Convenience shortcut for `requireRole('admin')`.
+* `requireSubscriber`: Convenience shortcut for `requireRole('subscriber', 'admin')`.
+
+### Authorization Endpoints
+| Method | Path | Required Role | Description |
+|---|---|---|---|
+| `GET` | `/api/auth/test/authenticated` | Any authenticated user | Verifies valid session identity |
+| `GET` | `/api/auth/test/subscriber` | `subscriber`, `admin` | Verifies subscriber privileges |
+| `GET` | `/api/auth/test/admin` | `admin` only | Verifies administrative privileges |
+
+### Security Guarantees
+1. **Authoritative Backend**: Client-side headers (`X-Role`, `X-User-Role`), query params (`?role=admin`), or request bodies are strictly ignored. The only trusted source of truth is `public.users.role` retrieved via the authenticated database profile.
+2. **Frontend Guards are UI Only**: The frontend `<RoleGate>` component controls view presentation for user experience, but all actual access control is enforced by Express backend middleware.
+3. **No Self-Service Role Changes**: Users cannot modify their role via any public endpoint. Role modifications must be performed through trusted backend/database administrative procedures.
+
+### Running RBAC Verification Tests
+An automated test suite is provided in `server/src/test/verify-rbac.ts` testing all 12 test matrix combinations:
+
+```bash
+cd server
+npm run test:rbac
+```
+

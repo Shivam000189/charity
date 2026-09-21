@@ -20,3 +20,40 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
     },
   });
 };
+
+export const testAuthenticated = async (req: Request, res: Response): Promise<void> => {
+  res.status(200).json({
+    success: true,
+    message: 'Authenticated access granted',
+    user: {
+      id: req.user?.id,
+      email: req.user?.email,
+      role: req.user?.role,
+    },
+  });
+};
+
+export const testSubscriber = async (req: Request, res: Response): Promise<void> => {
+  res.status(200).json({
+    success: true,
+    message: 'Subscriber access granted',
+    user: {
+      id: req.user?.id,
+      email: req.user?.email,
+      role: req.user?.role,
+    },
+  });
+};
+
+export const testAdmin = async (req: Request, res: Response): Promise<void> => {
+  res.status(200).json({
+    success: true,
+    message: 'Admin access granted',
+    user: {
+      id: req.user?.id,
+      email: req.user?.email,
+      role: req.user?.role,
+    },
+  });
+};
+

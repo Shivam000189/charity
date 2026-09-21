@@ -1,8 +1,10 @@
+export type UserRole = 'visitor' | 'subscriber' | 'admin';
+
 export interface AuthenticatedUser {
   id: string;
   email: string;
   name: string;
-  role: 'visitor' | 'subscriber' | 'admin';
+  role: UserRole;
 }
 
 declare global {

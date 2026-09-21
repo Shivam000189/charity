@@ -7,7 +7,8 @@
     "dev": "nodemon --exec tsx src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test:auth": "tsx src/test/verify-auth.ts"
+    "test:auth": "tsx src/test/verify-auth.ts",
+    "test:rbac": "tsx src/test/verify-rbac.ts"
   },
   "keywords": [],
   "author": "",

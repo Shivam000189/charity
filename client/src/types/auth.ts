@@ -1,10 +1,12 @@
 import type { User, Session } from '@supabase/supabase-js';
 
+export type UserRole = 'visitor' | 'subscriber' | 'admin';
+
 export interface UserProfile {
   id: string;
   email: string;
   name: string;
-  role: 'visitor' | 'subscriber' | 'admin';
+  role: UserRole;
 }
 
 export interface AuthContextType {
