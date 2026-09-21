@@ -137,3 +137,91 @@ Returns:
   "database": "connected"
 }
 ```
+
+---
+
+## Authentication Architecture (Step 5)
+
+> **Scope Note**: Step 5 implements **Authentication** ("Who is this user?"). Step 6 will implement **Authorization & RBAC** ("What is this user allowed to do?").
+
+```text
+Frontend (React + Vite)
+   │
+   ├─ User signs up / logs in via Supabase Auth client
+   │
+Supabase Auth
+   │
+   ├─ Creates record in `auth.users`
+   │
+PostgreSQL Trigger (`public.handle_new_user`)
+   │
+   ├─ Automatically synchronizes record into `public.users`
+   ├─ Maps `id = auth.users(id)`, `email`, `name`
+   └─ Hardcodes default `role = 'visitor'` (tamper-proof)
+   │
+Frontend Session
+   │
+   ├─ Supabase SDK persists JWT session in browser storage
+   ├─ `AuthContext` provides `user`, `session`, `loading`, `signUp`, `signIn`, `signOut`
+   └─ Authenticated requests attach `Authorization: Bearer <access_token>`
+   │
+Express Backend (`/api/auth/*`)
+   │
+   ├─ `authMiddleware` intercepts request and extracts Bearer token
+   ├─ `supabase.auth.getUser(token)` verifies JWT authenticity cryptographically
+   ├─ Fetches trusted profile from `public.users`
+   └─ Attaches typed `req.user` to Express request pipeline
+   │
+Authenticated API Endpoint (`GET /api/auth/me`)
+   └─ Returns safe user profile data (`id`, `email`, `name`, `role`)
+```
+
+### Environment Variables
+
+#### Frontend (`client/.env`)
+```env
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your-supabase-publishable-key
+VITE_API_URL=http://localhost:5000/api
+```
+
+#### Backend (`server/.env`)
+```env
+PORT=5000
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SECRET_KEY=your-supabase-secret-key
+DATABASE_URL=postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres
+```
+
+### Auth Endpoints
+
+| Method | Path | Auth Required | Description |
+|---|---|---|---|
+| `GET` | `/api/health` | No | System & database connectivity healthcheck |
+| `GET` | `/api/auth/me` | Yes (`Bearer <token>`) | Current authenticated user profile |
+
+### Security Guarantees
+
+1. **Privilege Separation**:
+   - `SUPABASE_SECRET_KEY` and `DATABASE_URL` exist **strictly on the backend**.
+   - The frontend bundle only consumes public publishable keys (`VITE_SUPABASE_PUBLISHABLE_KEY`).
+2. **Password Security**:
+   - Passwords are encrypted and managed purely within `auth.users` by Supabase Auth.
+   - `public.users` contains **no password column**.
+3. **Role Escalation Protection**:
+   - Client metadata such as `{ role: 'admin' }` passed during signup is completely ignored.
+   - The PostgreSQL trigger `public.handle_new_user()` enforces `role = 'visitor'`.
+4. **Token Verification**:
+   - Backend derives identity directly from the verified Supabase JWT; client-supplied user IDs or roles are never trusted.
+
+### Running Auth Verification Tests
+
+An automated test suite is provided in `server/src/test/verify-auth.ts` covering all 12 validation requirements (signup, profile sync, default role, login, invalid login, session persistence, logout, 401 without token, 401 with invalid token, 200 with valid token, role escalation rejection, secret key isolation).
+
+To run the verification suite:
+
+```bash
+cd server
+npm run test:auth
+```
+```

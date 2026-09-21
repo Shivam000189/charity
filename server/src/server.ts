@@ -4,6 +4,7 @@ import cors from 'cors';
 import { env } from './config/env';
 import { pool, checkDatabaseConnection } from './config/database';
 import healthRoutes from './routes/health.routes';
+import authRoutes from './routes/auth.routes';
 
 export const app = express();
 export const httpServer = createServer(app);
@@ -65,6 +66,9 @@ app.use(
 // Health check routes
 app.use('/api', healthRoutes);
 app.use('/', healthRoutes);
+
+// Auth routes
+app.use('/api/auth', authRoutes);
 
 // Root informational endpoint
 app.get(['/', '/api'], (_req: Request, res: Response) => {
