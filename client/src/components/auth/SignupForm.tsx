@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { ROUTES } from '../../constants/routes';
 
 export const SignupForm: React.FC<{ onToggleLogin: () => void }> = ({ onToggleLogin }) => {
   const { signUp } = useAuth();
+  const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,10 +27,11 @@ export const SignupForm: React.FC<{ onToggleLogin: () => void }> = ({ onToggleLo
     const res = await signUp(email, password, name);
     if (!res.success) {
       setErrorMsg(res.error || 'Failed to sign up');
+      setLoading(false);
     } else {
-      setSuccessMsg('Account created successfully! If email confirmation is enabled, please verify your email.');
+      // Upon successful signup, navigate directly to subscriber plan onboarding
+      navigate(ROUTES.ONBOARDING_PLAN, { replace: true });
     }
-    setLoading(false);
   };
 
   return (

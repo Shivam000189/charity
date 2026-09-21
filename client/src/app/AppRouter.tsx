@@ -24,6 +24,10 @@ import { SignupPage } from '../pages/auth/SignupPage';
 import { DashboardPage } from '../pages/user/DashboardPage';
 import { ProfilePage } from '../pages/user/ProfilePage';
 
+// Onboarding Pages
+import { PlanSelectionPage } from '../pages/onboarding/PlanSelectionPage';
+import { CheckoutPreviewPage } from '../pages/onboarding/CheckoutPreviewPage';
+
 // Subscriber Pages
 import { SubscriptionPage } from '../pages/subscriber/SubscriptionPage';
 import { MyEntriesPage } from '../pages/subscriber/MyEntriesPage';
@@ -58,6 +62,8 @@ export const AppRouter: React.FC = () => {
         <Route element={<ProtectedRoute />}>
           <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
           <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
+          <Route path={ROUTES.ONBOARDING_PLAN} element={<PlanSelectionPage />} />
+          <Route path={ROUTES.ONBOARDING_CHECKOUT} element={<CheckoutPreviewPage />} />
         </Route>
 
         {/* Subscriber Routes (Requires subscriber or admin role) */}

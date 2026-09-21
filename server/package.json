@@ -10,7 +10,8 @@
     "test:auth": "tsx src/test/verify-auth.ts",
     "test:rbac": "tsx src/test/verify-rbac.ts",
     "test:config": "tsx src/test/verify-config.ts",
-    "test:schema": "tsx src/test/verify-schema.ts"
+    "test:schema": "tsx src/test/verify-schema.ts",
+    "test:onboarding": "tsx src/test/verify-onboarding.ts"
   },
   "keywords": [],
   "author": "",

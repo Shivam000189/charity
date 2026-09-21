@@ -45,7 +45,29 @@ All 10 foundational setup phases have been implemented, verified, and locked:
 
 ---
 
-## 2. Next Development Phases (Future Roadmap)
+## 2. Active Development — Phase 1: Auth & Subscription
+
+### Step 1 — Subscriber Onboarding & Plan Selection
+Status: COMPLETE
+- **Objective**: Extend authentication flow to route new registrations to a dedicated subscriber onboarding flow.
+- **Implemented Flow**: `Signup` → `Plan Selection (/onboarding/plan)` → `Checkout Preview (/onboarding/checkout)` → `[Step 2 Payment]`.
+- **Plan Models**: Created TypeScript representations for `monthly` and `yearly` plans with explicit placeholder pricing (`"Price configured during payment integration"`).
+- **State Management**: Implemented `OnboardingContext` with `sessionStorage` fallback for refresh persistence.
+- **UI Components**:
+  - Plan Selection Page (`/onboarding/plan`): Responsive desktop/mobile card selector with clear visual focus/radio indicators and continue action.
+  - Checkout Preview Page (`/onboarding/checkout`): Order summary, billing recurrence indicator, "Change Plan" navigation, and informational payment notice.
+- **Guards & Protection**:
+  - Protected onboarding routes behind `ProtectedRoute` requiring authentication.
+  - Invalid/direct access to `/onboarding/checkout` without a selected plan redirects to `/onboarding/plan`.
+- **Role & Database Invariants**:
+  - Newly registered users strictly maintain `role = visitor`.
+  - Zero rows created in `public.subscriptions`.
+  - No database migrations, schema alterations, or mock backend API endpoints introduced.
+- **Verification**: 12-point automated test suite (`npm run test:onboarding`) passing cleanly.
+
+---
+
+## 3. Next Development Phases (Future Roadmap)
 
 > [!NOTE]
 > The following phases represent future business feature increments. None of these features are implemented in the foundation step.

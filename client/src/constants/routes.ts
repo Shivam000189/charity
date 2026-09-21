@@ -14,6 +14,10 @@ export const ROUTES = {
   DASHBOARD: '/dashboard',
   PROFILE: '/profile',
 
+  // Subscriber Onboarding Routes
+  ONBOARDING_PLAN: '/onboarding/plan',
+  ONBOARDING_CHECKOUT: '/onboarding/checkout',
+
   // Subscriber Routes
   SUBSCRIPTION: '/subscription',
   MY_ENTRIES: '/my-entries',
