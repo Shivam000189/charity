@@ -1,111 +1,183 @@
-# Digital Hero — Subscription & Onboarding Architecture
+# Subscription Architecture — Digital Hero
 
-This document describes the subscriber onboarding architecture, plan selection system, state management, and future payment integration roadmap for the Digital Hero application.
+## Overview
+
+Digital Hero uses a **payment-provider-agnostic** subscription system.
+The `PaymentProvider` interface decouples business logic from payment implementation.
 
 ---
 
-## 1. Onboarding Flow (Phase 1 — Step 1)
+## Current Architecture (Phase 1 Step 3)
 
-The subscriber onboarding flow guides newly registered users through plan evaluation and checkout preview before payment setup:
-
-```text
-Signup (/signup)
-   ↓
-Account Created (Supabase Auth & public.users sync)
-   ↓
+```
+User
+ ↓
+Signup → Dashboard
+ ↓
 Plan Selection (/onboarding/plan)
-   ↓
-Choose Monthly / Yearly
-   ↓
-Checkout Preview (/onboarding/checkout)
-   ↓
-[Payment Integration — Step 2]
+ ↓
+Order Summary (/onboarding/checkout)
+ ↓
+Mock Checkout (/onboarding/mock-checkout)   ← MockPaymentProvider
+ ↓
+POST /api/subscriptions/checkout            ← creates mock_session_<uuid>
+ ↓
+POST /api/subscriptions/pay                 ← processes mock payment
+ ↓
+SubscriptionService.createOrUpdateSubscription()
+ ↓
+public.subscriptions (Supabase PostgreSQL)
+ ↓
+/subscription/success
 ```
 
-### Flow Breakdown
+---
 
-1. **Signup (`/signup`)**:
-   - The user registers via `SignupForm.tsx`.
-   - On successful Supabase user creation and session establishment, the client programmatically navigates to `/onboarding/plan`.
-2. **Plan Selection (`/onboarding/plan`)**:
-   - Authenticated user reviews the available subscription options:
-     - **Monthly Plan**: Billed monthly, standard access.
-     - **Yearly Plan**: Billed yearly, annual commitment savings.
-   - User selects a plan card (visual indicator: border accent, checkmark badge, accessible radio semantics).
-   - "Continue to Checkout" button commits the selection to `OnboardingContext` and navigates to `/onboarding/checkout`.
-3. **Checkout Preview (`/onboarding/checkout`)**:
-   - Displays plan summary: Plan name, billing recurrence, and pricing indicator.
-   - Guarded route: If accessed directly without a selected plan in state/sessionStorage, automatically redirects to `/onboarding/plan`.
-   - Provides a "Change Plan" link taking the user back to `/onboarding/plan` with state retained.
-   - "Continue to Payment" button presents a clear informational banner explaining that real payment integration is scheduled for Step 2.
+## Future Architecture (Phase 1 Step 5+)
+
+```
+User
+ ↓
+Plan Selection → Order Summary → Backend
+ ↓
+POST /api/subscriptions/checkout            ← StripePaymentProvider
+ ↓
+Stripe Hosted Checkout
+ ↓
+Stripe Test Payment
+ ↓
+Stripe Webhook → POST /api/subscriptions/webhook
+ ↓
+SubscriptionService.createOrUpdateSubscription()
+ ↓
+public.subscriptions
+ ↓
+/subscription/success
+```
 
 ---
 
-## 2. Core Architectural Distinction
+## Provider Files
 
-> [!IMPORTANT]
-> **Plan Selection DOES NOT Activate a Subscription.**
->
-> - Selecting a plan is purely client-side onboarding intent.
-> - A user who selects a plan or views checkout preview **remains in the `visitor` role**.
-> - **Zero records** are inserted into `public.subscriptions`.
-> - The application does not grant subscriber privileges or access to protected subscriber routes (`/my-entries`, `/my-winnings`, etc.) until real payment processing and server-side verification succeed in subsequent steps.
+| File | Purpose |
+|---|---|
+| `server/src/providers/payment/payment.provider.ts` | Interface (TypeScript contract) |
+| `server/src/providers/payment/plan-pricing.ts` | Plan → DB plan mapping + pricing |
+| `server/src/providers/payment/mock.provider.ts` | **Active**: MockPaymentProvider |
+| `server/src/providers/payment/stripe.provider.ts` | Future: StripePaymentProvider shell |
+| `server/src/providers/payment/index.ts` | Exports active provider singleton |
 
-| Concept | Plan Selection (Step 1) | Active Subscription (Step 2+) |
-| :--- | :--- | :--- |
-| **State Storage** | React Context (`sessionStorage`) | PostgreSQL `public.subscriptions` |
-| **User Role** | `role = visitor` | `role = subscriber` |
-| **Payment Status** | Not initiated | Charged & confirmed via webhook |
-| **Route Access** | `/onboarding/*`, `/dashboard` | Subscriber routes (`/my-entries`, etc.) |
+**To switch providers**, change only `index.ts`:
+```typescript
+// Current (mock)
+export const paymentProvider: PaymentProvider = new MockPaymentProvider();
+
+// Future (Stripe)
+// export const paymentProvider: PaymentProvider = new StripePaymentProvider();
+```
 
 ---
 
-## 3. Plan Data Model
+## Demo Pricing
 
-The frontend subscription plan definitions are defined in `client/src/types/subscription.ts`:
+> **These are DEMO prices for development only. Update before production.**
+
+| Plan | API ID | DB Plan | Amount (INR) | Paise |
+|---|---|---|---|---|
+| Monthly | `monthly` | `monthly` | 499/month | 49,900 |
+| Yearly | `yearly` | `annual` | 4,999/year | 4,99,900 |
+
+> **Important**: `'yearly'` (API) maps to `'annual'` (DB column). The DB schema uses `CHECK (plan IN ('monthly', 'annual', 'daily'))`.
+> This mapping is handled transparently in `mapPlanToDb()`.
+
+---
+
+## Demo Test Cards (MockPaymentProvider)
+
+| Card Number | Behavior |
+|---|---|
+| `4242 4242 4242 4242` | Payment succeeds |
+| `4000 0000 0000 0002` | Payment declined |
+| Any other 16-digit | Payment succeeds (permissive mock) |
+
+Use any future expiry (MM/YY) and any 3-4 digit CVV.
+
+> **Security**: Card details are validated format-only and are **never stored, logged, or persisted** anywhere in the application.
+
+---
+
+## Idempotency
+
+Sessions are **single-use**:
+- A session is created when `POST /api/subscriptions/checkout` is called
+- A session is consumed (deleted) when `POST /api/subscriptions/pay` succeeds
+- A second `POST /pay` with the same sessionId will fail with "Invalid or expired session"
+- Declined payments do NOT consume the session — the user can retry with a different card
+
+Database idempotency:
+- The `idx_subscriptions_user_active` unique partial index enforces max one active subscription per user
+- `SubscriptionService.createOrUpdateSubscription()` handles existing rows via UPDATE (not INSERT)
+
+---
+
+## Date Arithmetic
+
+Subscription expiry uses proper calendar arithmetic via `Date.setMonth()` / `Date.setFullYear()`:
 
 ```typescript
-export type SubscriptionPlanId = 'monthly' | 'yearly';
-
-export interface PlanDetails {
-  id: SubscriptionPlanId;
-  name: string;
-  billingInterval: 'month' | 'year';
-  displayPrice: string;
-  description: string;
-  features: string[];
-}
+// monthly: Jan 31 + 1 month -> Feb 28 (not 31 days later)
+// yearly:  Feb 29 (leap year) + 1 year -> Feb 28 (correct)
 ```
 
-### Pricing Disclaimer
-In accordance with PRD guidelines, exact production prices are **not invented**:
-- Display price uses the explicit placeholder: `"Price configured during payment integration"`.
-- No fake Stripe price IDs or mockup amounts exist in code.
+This is enforced by `calculateExpiresAt()` in `plan-pricing.ts`.
 
 ---
 
-## 4. Route Protection & Existing User Safeguards
+## Stripe Migration Guide
 
-1. **Authentication Guard**:
-   - `/onboarding/plan` and `/onboarding/checkout` are mounted inside `<ProtectedRoute />` within `client/src/app/AppRouter.tsx`.
-   - Unauthenticated visitors attempting to access these routes are redirected to `/login` with return intent preserved.
-2. **Existing User Flow**:
-   - Users logging in via `/login` continue to be routed directly to `/dashboard` (or their requested return location).
-   - Existing visitors and subscribers are never forced into onboarding loops on login.
-3. **Admin Exemption**:
-   - Administrative users retain unrestricted access to `/admin/*` routes and are unaffected by subscriber onboarding flows.
+When switching from mock to Stripe:
+
+1. **Configure environment variables** in `server/.env`:
+   ```
+   PAYMENT_PROVIDER=stripe
+   STRIPE_SECRET_KEY=sk_test_...
+   STRIPE_MONTHLY_PRICE_ID=price_...
+   STRIPE_YEARLY_PRICE_ID=price_...
+   STRIPE_WEBHOOK_SECRET=whsec_...
+   ```
+
+2. **Implement `StripePaymentProvider`** in `stripe.provider.ts`:
+   - `createCheckout()` calls `createCheckoutSession()` from `stripe.service.ts`
+   - `processPayment()` is not needed (Stripe uses webhooks, not direct pay calls)
+
+3. **Update `index.ts`** to export `StripePaymentProvider`
+
+4. **Update the frontend flow**:
+   - `POST /api/subscriptions/checkout` returns `url` (Stripe redirect)
+   - Frontend does: `window.location.href = checkoutSession.url`
+   - Stripe webhook handles payment confirmation and subscription creation
+
+5. **Enable webhook** at `POST /api/subscriptions/webhook` (already implemented in `webhook.service.ts`)
 
 ---
 
-## 5. Scope & Deferred Features (Phase 1 — Step 2+)
+## Database Schema Reference
 
-The following capabilities are **explicitly NOT implemented** in Step 1 and are deferred to Step 2 and subsequent phases:
+```sql
+CREATE TABLE public.subscriptions (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id      UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  plan         TEXT NOT NULL CHECK (plan IN ('monthly', 'annual', 'daily')),
+  status       TEXT NOT NULL CHECK (status IN ('pending', 'active', 'cancelled', 'expired')),
+  started_at   TIMESTAMPTZ NOT NULL,
+  expires_at   TIMESTAMPTZ NOT NULL,
+  cancelled_at TIMESTAMPTZ,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT chk_subscriptions_expires_after_started CHECK (expires_at > started_at)
+);
 
-- **Stripe SDK & Library**: No Stripe client/server libraries or API keys introduced.
-- **Stripe Products & Prices**: No live Stripe price entities or checkout sessions.
-- **Stripe Elements / Checkout**: No payment collection forms or credit card inputs.
-- **Payment Processing**: No credit card or third-party payment transactions executed.
-- **Payment Database Records**: No payment audit or transaction records in PostgreSQL.
-- **Stripe Webhooks**: Webhook endpoint (`/api/webhooks/stripe`) deferred to Step 2.
-- **Subscription Lifecycle**: Auto-renewal, cancellation, expiration, and lapse management deferred to Steps 3–5.
-- **Role Escalation**: Transitioning users from `visitor` to `subscriber` upon successful payment deferred to Step 2.
+-- Enforces max one active subscription per user
+CREATE UNIQUE INDEX idx_subscriptions_user_active
+  ON public.subscriptions (user_id) WHERE (status = 'active');
+```

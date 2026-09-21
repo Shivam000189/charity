@@ -65,6 +65,27 @@ Status: COMPLETE
   - No database migrations, schema alterations, or mock backend API endpoints introduced.
 - **Verification**: 12-point automated test suite (`npm run test:onboarding`) passing cleanly.
 
+### Step 2 — Stripe Test-Mode Subscription Integration
+Status: COMPLETE
+- **Objective**: Connect subscriber onboarding checkout preview to Stripe Checkout in test mode for monthly and yearly subscriptions.
+- **Stripe Backend Setup**:
+  - Integrated official `stripe` Node SDK exclusively in backend (`server/`).
+  - Added centralized configuration in `server/src/config/stripe.ts` with strict test-mode validation (forbids `sk_live_`).
+  - Implemented `server/src/services/stripe.service.ts` mapping `monthly` and `yearly` plans to environment-configured recurring Price IDs (`STRIPE_MONTHLY_PRICE_ID`, `STRIPE_YEARLY_PRICE_ID`).
+  - Attached authenticated application user identity (`userId`, `plan`) to session metadata and `subscription_data.metadata`.
+- **Checkout API**:
+  - Built protected endpoint `POST /api/subscriptions/checkout` requiring JWT Bearer authentication.
+  - Enforced strict plan validation (only accepts `'monthly'` or `'yearly'`), rejecting arbitrary price IDs.
+  - Returns Stripe hosted checkout URL for browser redirection.
+- **Frontend Checkout Integration**:
+  - Updated `CheckoutPreviewPage.tsx` with async checkout submission, button loading state (`Creating secure checkout...`), duplicate click prevention (`disabled={isSubmitting}`), and error alerts.
+  - Created `SubscriptionSuccessPage.tsx` at `/subscription/success` and `SubscriptionCancelPage.tsx` at `/subscription/cancel`.
+  - Configured success page to clarify test mode status without claiming premature subscription activation before webhook sync.
+- **Security & Secret Protection**:
+  - Verified `STRIPE_SECRET_KEY` is backend-only; 0 occurrences in frontend code or production bundle.
+  - Zero database schema changes; zero subscription rows created manually; zero role escalation.
+- **Verification**: 18-point automated test suite (`npm run test:stripe`) passing cleanly.
+
 ---
 
 ## 3. Next Development Phases (Future Roadmap)

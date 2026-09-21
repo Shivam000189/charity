@@ -5,11 +5,17 @@ import { env } from './config/env';
 import { pool, checkDatabaseConnection } from './config/database';
 import healthRoutes from './routes/health.routes';
 import authRoutes from './routes/auth.routes';
+import subscriptionRoutes from './routes/subscription.routes';
+import webhookRoutes from './routes/webhook.routes';
 
 export const app = express();
 export const httpServer = createServer(app);
 const PORT = env.PORT;
 
+// Webhooks with raw request body parsing mounted BEFORE global express.json()
+app.use('/api/webhooks', express.raw({ type: 'application/json' }), webhookRoutes);
+
+// Global JSON parsing for standard API endpoints
 app.use(express.json());
 
 const localOrigins = [
@@ -64,6 +70,9 @@ app.use('/', healthRoutes);
 
 // Auth routes
 app.use('/api/auth', authRoutes);
+
+// Subscription routes
+app.use('/api/subscriptions', subscriptionRoutes);
 
 // Root informational endpoint
 app.get(['/', '/api'], (_req: Request, res: Response) => {

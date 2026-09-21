@@ -17,9 +17,12 @@ export const ROUTES = {
   // Subscriber Onboarding Routes
   ONBOARDING_PLAN: '/onboarding/plan',
   ONBOARDING_CHECKOUT: '/onboarding/checkout',
+  ONBOARDING_MOCK_CHECKOUT: '/onboarding/mock-checkout',
 
   // Subscriber Routes
   SUBSCRIPTION: '/subscription',
+  SUBSCRIPTION_SUCCESS: '/subscription/success',
+  SUBSCRIPTION_CANCEL: '/subscription/cancel',
   MY_ENTRIES: '/my-entries',
   MY_WINNINGS: '/my-winnings',
 

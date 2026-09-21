@@ -8,6 +8,12 @@ export interface ServerConfig {
   SUPABASE_URL: string;
   SUPABASE_SECRET_KEY: string;
   DATABASE_URL: string;
+  STRIPE_SECRET_KEY: string;
+  STRIPE_WEBHOOK_SECRET: string;
+  STRIPE_MONTHLY_PRICE_ID: string;
+  STRIPE_YEARLY_PRICE_ID: string;
+  STRIPE_SUCCESS_URL: string;
+  STRIPE_CANCEL_URL: string;
   isProduction: boolean;
   isDevelopment: boolean;
   isTest: boolean;
@@ -52,13 +58,27 @@ export function validateEnv(rawEnv: Record<string, string | undefined>): ServerC
     throw new Error(`Invalid NODE_ENV: must be development, production, or test (received "${nodeEnv}")`);
   }
 
+  const clientUrl = (rawEnv.CLIENT_URL || 'http://localhost:5173').replace(/\/$/, '');
+  const stripeSecretKey = rawEnv.STRIPE_SECRET_KEY?.trim() || '';
+
+  // Enforce TEST MODE: Reject live Stripe secret keys in Step 2
+  if (stripeSecretKey.startsWith('sk_live_')) {
+    throw new Error('Invalid STRIPE_SECRET_KEY: Live Stripe credentials are strictly prohibited. Use a test mode key (sk_test_).');
+  }
+
   return {
     PORT: port,
     NODE_ENV: nodeEnv,
-    CLIENT_URL: rawEnv.CLIENT_URL || 'http://localhost:5173',
+    CLIENT_URL: clientUrl,
     SUPABASE_URL: supabaseUrl,
     SUPABASE_SECRET_KEY: rawEnv.SUPABASE_SECRET_KEY!.trim(),
     DATABASE_URL: rawEnv.DATABASE_URL!.trim(),
+    STRIPE_SECRET_KEY: stripeSecretKey,
+    STRIPE_WEBHOOK_SECRET: rawEnv.STRIPE_WEBHOOK_SECRET?.trim() || '',
+    STRIPE_MONTHLY_PRICE_ID: rawEnv.STRIPE_MONTHLY_PRICE_ID?.trim() || '',
+    STRIPE_YEARLY_PRICE_ID: rawEnv.STRIPE_YEARLY_PRICE_ID?.trim() || '',
+    STRIPE_SUCCESS_URL: rawEnv.STRIPE_SUCCESS_URL?.trim() || `${clientUrl}/subscription/success`,
+    STRIPE_CANCEL_URL: rawEnv.STRIPE_CANCEL_URL?.trim() || `${clientUrl}/onboarding/checkout`,
     isProduction: nodeEnv === 'production',
     isDevelopment: nodeEnv === 'development',
     isTest: nodeEnv === 'test',

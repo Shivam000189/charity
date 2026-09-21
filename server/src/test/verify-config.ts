@@ -133,6 +133,12 @@ async function runConfigVerification() {
         if (content.includes('DATABASE_URL') && !fullPath.includes('.example')) {
           findings.push(`${fullPath}: contains DATABASE_URL`);
         }
+        if (content.includes('STRIPE_SECRET_KEY') && !fullPath.includes('.example')) {
+          findings.push(`${fullPath}: contains STRIPE_SECRET_KEY`);
+        }
+        if (content.includes('STRIPE_WEBHOOK_SECRET') && !fullPath.includes('.example')) {
+          findings.push(`${fullPath}: contains STRIPE_WEBHOOK_SECRET`);
+        }
       }
     }
     return findings;
@@ -157,6 +163,12 @@ async function runConfigVerification() {
       }
       if (content.includes('DATABASE_URL')) {
         distFindings.push(`client/dist/assets/${jsFile} contains DATABASE_URL`);
+      }
+      if (content.includes('STRIPE_SECRET_KEY')) {
+        distFindings.push(`client/dist/assets/${jsFile} contains STRIPE_SECRET_KEY`);
+      }
+      if (content.includes('STRIPE_WEBHOOK_SECRET')) {
+        distFindings.push(`client/dist/assets/${jsFile} contains STRIPE_WEBHOOK_SECRET`);
       }
     }
 

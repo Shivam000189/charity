@@ -27,6 +27,9 @@ import { ProfilePage } from '../pages/user/ProfilePage';
 // Onboarding Pages
 import { PlanSelectionPage } from '../pages/onboarding/PlanSelectionPage';
 import { CheckoutPreviewPage } from '../pages/onboarding/CheckoutPreviewPage';
+import { MockCheckoutPage } from '../pages/onboarding/MockCheckoutPage';
+import { SubscriptionSuccessPage } from '../pages/subscription/SubscriptionSuccessPage';
+import { SubscriptionCancelPage } from '../pages/subscription/SubscriptionCancelPage';
 
 // Subscriber Pages
 import { SubscriptionPage } from '../pages/subscriber/SubscriptionPage';
@@ -64,6 +67,9 @@ export const AppRouter: React.FC = () => {
           <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
           <Route path={ROUTES.ONBOARDING_PLAN} element={<PlanSelectionPage />} />
           <Route path={ROUTES.ONBOARDING_CHECKOUT} element={<CheckoutPreviewPage />} />
+          <Route path={ROUTES.ONBOARDING_MOCK_CHECKOUT} element={<MockCheckoutPage />} />
+          <Route path={ROUTES.SUBSCRIPTION_SUCCESS} element={<SubscriptionSuccessPage />} />
+          <Route path={ROUTES.SUBSCRIPTION_CANCEL} element={<SubscriptionCancelPage />} />
         </Route>
 
         {/* Subscriber Routes (Requires subscriber or admin role) */}

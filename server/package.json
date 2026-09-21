@@ -11,7 +11,9 @@
     "test:rbac": "tsx src/test/verify-rbac.ts",
     "test:config": "tsx src/test/verify-config.ts",
     "test:schema": "tsx src/test/verify-schema.ts",
-    "test:onboarding": "tsx src/test/verify-onboarding.ts"
+    "test:onboarding": "tsx src/test/verify-onboarding.ts",
+    "test:stripe": "tsx src/test/verify-stripe-checkout.ts",
+    "test:webhook": "tsx src/test/verify-stripe-webhook.ts"
   },
   "keywords": [],
   "author": "",
@@ -21,7 +23,8 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "pg": "^8.23.0"
+    "pg": "^8.23.0",
+    "stripe": "^22.6.2"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
