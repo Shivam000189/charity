@@ -1,0 +1,99 @@
+erDiagram
+    USERS ||--o{ SUBSCRIPTIONS : "has"
+    USERS ||--o{ SCORES : "submits"
+    USERS ||--o{ DRAW_ENTRIES : "enters"
+    USERS ||--o{ WINNERS : "wins"
+    CHARITIES ||--o{ DRAWS : "supports"
+    DRAWS ||--o{ DRAW_ENTRIES : "contains"
+    DRAWS ||--o{ WINNERS : "selects"
+    SCORES ||--o{ DRAW_ENTRIES : "qualifies"
+    DRAW_ENTRIES ||--o| WINNERS : "awarded_to"
+    WINNERS ||--o{ PAYOUTS : "disburses"
+
+    USERS {
+        uuid id PK "auth.users(id)"
+        text email UK "Case-insensitive unique"
+        text name "Full name"
+        text role "visitor | subscriber | admin"
+        timestamptz deleted_at "Soft deletion timestamp"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    SUBSCRIPTIONS {
+        uuid id PK
+        uuid user_id FK "users(id) ON DELETE RESTRICT"
+        text plan "monthly | annual | daily"
+        text status "pending | active | cancelled | expired"
+        timestamptz started_at
+        timestamptz expires_at
+        timestamptz cancelled_at
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    SCORES {
+        uuid id PK
+        uuid user_id FK "users(id) ON DELETE CASCADE"
+        integer score ">= 0"
+        date score_date "Calendar day, UNIQUE(user_id, score_date)"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    CHARITIES {
+        uuid id PK
+        text name UK "Unique charity name"
+        text description
+        text logo_url
+        text website_url
+        boolean is_active "Soft deactivation"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    DRAWS {
+        uuid id PK
+        text name
+        text description
+        uuid charity_id FK "charities(id) ON DELETE RESTRICT"
+        timestamptz draw_date "Execution time"
+        timestamptz entry_deadline "<= draw_date"
+        text status "scheduled | open | closed | completed | cancelled"
+        numeric prize_amount "NUMERIC(12, 2) >= 0"
+        text currency "ISO-4217, default INR"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    DRAW_ENTRIES {
+        uuid id PK
+        uuid draw_id FK "draws(id) ON DELETE RESTRICT"
+        uuid user_id FK "users(id) ON DELETE RESTRICT"
+        uuid score_id FK "scores(id) ON DELETE SET NULL"
+        timestamptz created_at
+    }
+
+    WINNERS {
+        uuid id PK
+        uuid draw_id FK "draws(id) ON DELETE RESTRICT"
+        uuid user_id FK "users(id) ON DELETE RESTRICT"
+        uuid draw_entry_id FK,UK "draw_entries(id) ON DELETE RESTRICT"
+        integer rank ">= 1, UNIQUE(draw_id, rank)"
+        numeric prize_amount "Historical snapshot >= 0"
+        text currency "ISO-4217, default INR"
+        timestamptz created_at
+    }
+
+    PAYOUTS {
+        uuid id PK
+        uuid winner_id FK "winners(id) ON DELETE RESTRICT"
+        numeric amount "NUMERIC(12, 2) > 0"
+        text currency "ISO-4217, default INR"
+        text status "pending | processing | completed | failed | refunded"
+        text transaction_reference UK "Unique gateway reference"
+        text failure_reason
+        timestamptz paid_at
+        timestamptz created_at
+        timestamptz updated_at
+    }
