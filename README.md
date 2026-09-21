@@ -1,460 +1,137 @@
 # Digital Hero
 
-Full-stack application built with React (Vite) and Node.js (Express) with Supabase PostgreSQL.
-
-## Architecture
-
-* **Frontend**: React 19, Vite, TailwindCSS, TypeScript
-* **Backend**: Node.js, Express, TypeScript
-* **Database**: Supabase PostgreSQL (`pg` connection pool + Supabase JS Client)
+Digital Hero is a full-stack web platform built with React 19, Express, TypeScript, and Supabase. The platform empowers subscribers to participate in charitable draws, track scores, support non-profit organizations, and receive audited payouts.
 
 ---
 
-## Supabase Setup
+## 1. Project Status
 
-1. **Create a Supabase Project**:
-   - Go to [Supabase](https://supabase.com/) and create a new project.
-2. **Obtain Project Credentials**:
-   - **Project URL**: In Project Settings > API > Project URL.
-   - **Publishable Key**: In Project Settings > API > Project API Keys (Publishable key).
-   - **Secret Key**: In Project Settings > API > Project API Keys (Secret key).
-   - **PostgreSQL Connection String**: In Project Settings > Database > Connection string (NodeJS / URI). Ensure special characters in the database password (such as `#` -> `%23`) are properly URL-encoded.
-3. **Configure Environment Variables**:
-   - Create `.env` in `server/` using `server/.env.example`:
-     ```env
-     PORT=5000
-     SUPABASE_URL=https://your-project-id.supabase.co
-     SUPABASE_SECRET_KEY=your-supabase-secret-key
-     DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-REF].supabase.co:5432/postgres
-     ```
-   - Create `.env` in `client/` using `client/.env.example`:
-     ```env
-     VITE_SUPABASE_URL=https://your-project-id.supabase.co
-     VITE_SUPABASE_PUBLISHABLE_KEY=your-supabase-publishable-key
-     VITE_API_URL=http://localhost:5000/api
-     ```
-4. **Security**:
-   - **Never commit `.env` files** or real credentials to version control. All `.env` and `.env.*.local` files are ignored by git.
-   - The backend `SUPABASE_SECRET_KEY` and `DATABASE_URL` must never be shared with or exposed in frontend code.
+```text
+Foundation Status: Steps 1–10 COMPLETE & VERIFIED ✅
+Current Phase:     Ready for Feature Development (Phases A–J)
+```
+
+The core foundation—including database schema migrations, Supabase authentication, 3-tier RBAC authorization, routing, environment validation, and production deployment preparation—is complete, tested, and locked.
 
 ---
 
-## Database Migrations (Supabase)
+## 2. Tech Stack
 
-Database migrations are version-controlled in `supabase/migrations/`.
+* **Frontend**: React 19, Vite 8, TypeScript, TailwindCSS 4, React Router v7.
+* **Backend**: Node.js, Express 4, TypeScript (`tsx` / `tsc`), `pg` pool.
+* **Database**: Supabase PostgreSQL (1:1 auth trigger, UUID primary keys, financial precision).
+* **Authentication**: Supabase Auth (managed sessions, JWT access tokens).
+* **Authorization**: Express RBAC (`visitor`, `subscriber`, `admin`).
+* **Deployment Target**: Vercel (Frontend SPA + Serverless Backend Adapter) / Node.js persistent host.
 
-### 1. Supabase CLI
-You can use the Supabase CLI directly via `npx` (no global installation required):
-```bash
-npx supabase --version
-```
-Or install globally via npm:
-```bash
-npm install -g supabase
-```
+---
 
-### 2. Linking the Project (Optional)
-To link the CLI directly to your remote Supabase project:
-```bash
-npx supabase link --project-ref <your-project-ref>
-```
+## 3. Repository Structure
 
-### 3. Creating New Migrations
-To generate a new timestamped migration file:
-```bash
-npx supabase migration new <migration_name>
-```
-
-### 4. Applying Migrations
-To push all local migrations to your remote Supabase database:
-```bash
-# Using DATABASE_URL
-npx supabase db push --db-url "<YOUR_PERCENT_ENCODED_DATABASE_URL>"
-
-# Or using linked project
-npx supabase db push
-```
-
-To perform a dry run before applying:
-```bash
-npx supabase db push --dry-run --db-url "<YOUR_DATABASE_URL>"
-```
-
-### 5. Checking Migration Status
-To view applied vs pending migrations:
-```bash
-npx supabase migration list --db-url "<YOUR_DATABASE_URL>"
-```
-
-### 6. Local Development (Optional)
-If developing locally with Docker:
-```bash
-npx supabase start       # Start local Supabase containers
-npx supabase db reset    # Reset local database and re-apply all migrations
-npx supabase stop        # Stop local containers
+```text
+dgital-hero/
+├── client/                     # Frontend React + Vite application
+│   ├── src/                    # Components, pages, layouts, context, hooks
+│   ├── vercel.json             # Vercel SPA routing fallback configuration
+│   └── package.json
+├── server/                     # Backend Express API
+│   ├── api/                    # Serverless adapter entrypoint (api/index.ts)
+│   ├── src/                    # Config, controllers, middleware, routes, tests
+│   ├── vercel.json             # Vercel backend routing configuration
+│   └── package.json
+├── supabase/                   # Database version-controlled migrations
+│   └── migrations/             # SQL schema and trigger migrations
+├── docs/                       # Complete architectural and technical documentation
+└── README.md                   # Project overview & quickstart
 ```
 
 ---
 
-## Getting Started
+## 4. Documentation Index
 
-### Backend Setup & Run
+For deep architectural and technical specifications, refer to the dedicated documents in `docs/`:
 
+* [System Architecture](file:///d:/shivam/projects/dgital-hero/docs/architecture.md): Component diagrams, data flow, and security boundaries.
+* [Database Architecture](file:///d:/shivam/projects/dgital-hero/docs/database.md): Schema, table specifications, constraints, and relationships.
+* [Authentication Guide](file:///d:/shivam/projects/dgital-hero/docs/authentication.md): Supabase Auth lifecycle, signup trigger, and JWT verification.
+* [Authorization & RBAC](file:///d:/shivam/projects/dgital-hero/docs/authorization.md): Role hierarchy (`visitor`, `subscriber`, `admin`) and permission matrix.
+* [Environment Configuration](file:///d:/shivam/projects/dgital-hero/docs/environment.md): Environment variables, validation rules, and secret protection.
+* [Local Development Guide](file:///d:/shivam/projects/dgital-hero/docs/development.md): Prerequisites, step-by-step setup, and dev servers.
+* [Deployment Guide](file:///d:/shivam/projects/dgital-hero/docs/deployment.md): Vercel setup, CORS, production health check, and smoke tests.
+* [API Specification](file:///d:/shivam/projects/dgital-hero/docs/api.md): REST endpoint definitions, request payloads, and error codes.
+* [Task Tracker & Roadmap](file:///d:/shivam/projects/dgital-hero/docs/task-tracker.md): Completed foundation summary and future phases (A–J).
+
+---
+
+## 5. Quickstart Guide
+
+### 5.1. Install Dependencies
 ```bash
+# Backend dependencies
 cd server
 npm install
+
+# Frontend dependencies
+cd ../client
+npm install
+```
+
+### 5.2. Environment Variables
+Create `.env` files in both `client/` and `server/` using the tracked `.env.example` templates:
+
+* **`server/.env`**:
+  ```env
+  PORT=5000
+  NODE_ENV=development
+  CLIENT_URL=http://localhost:5173
+  SUPABASE_URL=https://your-project.supabase.co
+  SUPABASE_SECRET_KEY=your-supabase-secret-key
+  DATABASE_URL=postgresql://postgres:password@db.your-project.supabase.co:5432/postgres
+  ```
+* **`client/.env`**:
+  ```env
+  VITE_SUPABASE_URL=https://your-project.supabase.co
+  VITE_SUPABASE_PUBLISHABLE_KEY=your-supabase-publishable-key
+  VITE_API_URL=http://localhost:5000/api
+  ```
+
+### 5.3. Run Development Servers
+```bash
+# Terminal 1: Start Backend (http://localhost:5000)
+cd server
+npm run dev
+
+# Terminal 2: Start Frontend (http://localhost:5173)
+cd client
 npm run dev
 ```
 
-* Starts Express server on `http://localhost:5000`.
-* Build TypeScript: `npm run build`
-* Production start: `npm start`
-* Database Health Check: `GET http://localhost:5000/api/health`
+---
 
-### Frontend Setup & Run
+## 6. Automated Testing & Verification
 
+All automated tests are located in `server/src/test/`:
+
+```bash
+cd server
+
+npm run test:config     # Validates env parsing & audits dist/ for secret leakage
+npm run test:schema     # Verifies all 8 database tables, UUID PKs, and constraints
+npm run test:auth       # 12-point authentication test suite
+npm run test:rbac       # 12-point RBAC authorization test suite
+```
+
+Frontend build and lint verification:
 ```bash
 cd client
-npm install
-npm run dev
-```
-
-* Starts Vite development server on `http://localhost:5173`.
-* Type check & Build: `npm run build`
-* Linting: `npm run lint`
-
----
-
-## Database Health Endpoint
-
-`GET /api/health`
-
-Returns:
-```json
-{
-  "success": true,
-  "server": "ok",
-  "database": "connected"
-}
+npm run lint            # ESLint check (0 errors, 0 warnings)
+npm run build           # Production bundle build
 ```
 
 ---
 
-## Authentication Architecture (Step 5)
+## 7. Security Policy
 
-> **Scope Note**: Step 5 implements **Authentication** ("Who is this user?"). Step 6 will implement **Authorization & RBAC** ("What is this user allowed to do?").
-
-```text
-Frontend (React + Vite)
-   │
-   ├─ User signs up / logs in via Supabase Auth client
-   │
-Supabase Auth
-   │
-   ├─ Creates record in `auth.users`
-   │
-PostgreSQL Trigger (`public.handle_new_user`)
-   │
-   ├─ Automatically synchronizes record into `public.users`
-   ├─ Maps `id = auth.users(id)`, `email`, `name`
-   └─ Hardcodes default `role = 'visitor'` (tamper-proof)
-   │
-Frontend Session
-   │
-   ├─ Supabase SDK persists JWT session in browser storage
-   ├─ `AuthContext` provides `user`, `session`, `loading`, `signUp`, `signIn`, `signOut`
-   └─ Authenticated requests attach `Authorization: Bearer <access_token>`
-   │
-Express Backend (`/api/auth/*`)
-   │
-   ├─ `authMiddleware` intercepts request and extracts Bearer token
-   ├─ `supabase.auth.getUser(token)` verifies JWT authenticity cryptographically
-   ├─ Fetches trusted profile from `public.users`
-   └─ Attaches typed `req.user` to Express request pipeline
-   │
-Authenticated API Endpoint (`GET /api/auth/me`)
-   └─ Returns safe user profile data (`id`, `email`, `name`, `role`)
-```
-
-### Environment Variables
-
-#### Frontend (`client/.env`)
-```env
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=your-supabase-publishable-key
-VITE_API_URL=http://localhost:5000/api
-```
-
-#### Backend (`server/.env`)
-```env
-PORT=5000
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SECRET_KEY=your-supabase-secret-key
-DATABASE_URL=postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres
-```
-
-### Auth Endpoints
-
-| Method | Path | Auth Required | Description |
-|---|---|---|---|
-| `GET` | `/api/health` | No | System & database connectivity healthcheck |
-| `GET` | `/api/auth/me` | Yes (`Bearer <token>`) | Current authenticated user profile |
-
-### Security Guarantees
-
-1. **Privilege Separation**:
-   - `SUPABASE_SECRET_KEY` and `DATABASE_URL` exist **strictly on the backend**.
-   - The frontend bundle only consumes public publishable keys (`VITE_SUPABASE_PUBLISHABLE_KEY`).
-2. **Password Security**:
-   - Passwords are encrypted and managed purely within `auth.users` by Supabase Auth.
-   - `public.users` contains **no password column**.
-3. **Role Escalation Protection**:
-   - Client metadata such as `{ role: 'admin' }` passed during signup is completely ignored.
-   - The PostgreSQL trigger `public.handle_new_user()` enforces `role = 'visitor'`.
-4. **Token Verification**:
-   - Backend derives identity directly from the verified Supabase JWT; client-supplied user IDs or roles are never trusted.
-
-### Running Auth Verification Tests
-
-An automated test suite is provided in `server/src/test/verify-auth.ts` covering all 12 validation requirements (signup, profile sync, default role, login, invalid login, session persistence, logout, 401 without token, 401 with invalid token, 200 with valid token, role escalation rejection, secret key isolation).
-
-To run the verification suite:
-
-```bash
-cd server
-npm run test:auth
-```
-
----
-
-## Authorization & Role-Based Access Control (Step 6)
-
-### Responsibilities
-* **Authentication (Step 5)**: *"Who is this user?"* (Supabase Auth verification)
-* **Authorization (Step 6)**: *"What is this user allowed to do?"* (`public.users.role` check)
-
-### Role Model
-The application defines three strictly typed roles:
-```ts
-export type UserRole = 'visitor' | 'subscriber' | 'admin';
-```
-
-| Capability | Visitor | Subscriber | Admin |
-|---|:---:|:---:|:---:|
-| Public content | ✅ | ✅ | ✅ |
-| Authenticated profile | ✅ | ✅ | ✅ |
-| Subscriber features | ❌ | ✅ | ✅ |
-| Subscription management | ❌ | ✅ | ✅ |
-| Admin features & management | ❌ | ❌ | ✅ |
-
-### Request Pipeline & Middleware Ordering
-Authorization checks must **always** be executed after authentication middleware:
-
-```text
-Request
-  │
-  ▼
-requireAuth (verifies Supabase JWT -> populates req.user from public.users)
-  │
-  ▼
-requireRole('admin') / requireSubscriber / requireRole(...)
-  │
-  ▼
-Controller handler
-```
-
-### HTTP Status Code Semantics
-* `401 Unauthorized`: Missing, invalid, or expired authentication token.
-  ```json
-  { "success": false, "message": "Authentication required" }
-  ```
-* `403 Forbidden`: Authenticated user does not possess the required role.
-  ```json
-  { "success": false, "message": "Insufficient permissions" }
-  ```
-
-### Reusable Middleware Helpers
-* `requireRole(...roles: UserRole[])`: Base higher-order authorization middleware.
-* `requireAdmin`: Convenience shortcut for `requireRole('admin')`.
-* `requireSubscriber`: Convenience shortcut for `requireRole('subscriber', 'admin')`.
-
-### Authorization Endpoints
-| Method | Path | Required Role | Description |
-|---|---|---|---|
-| `GET` | `/api/auth/test/authenticated` | Any authenticated user | Verifies valid session identity |
-| `GET` | `/api/auth/test/subscriber` | `subscriber`, `admin` | Verifies subscriber privileges |
-| `GET` | `/api/auth/test/admin` | `admin` only | Verifies administrative privileges |
-
-### Security Guarantees
-1. **Authoritative Backend**: Client-side headers (`X-Role`, `X-User-Role`), query params (`?role=admin`), or request bodies are strictly ignored. The only trusted source of truth is `public.users.role` retrieved via the authenticated database profile.
-2. **Frontend Guards are UI Only**: The frontend `<RoleGate>` component controls view presentation for user experience, but all actual access control is enforced by Express backend middleware.
-3. **No Self-Service Role Changes**: Users cannot modify their role via any public endpoint. Role modifications must be performed through trusted backend/database administrative procedures.
-
-### Running RBAC Verification Tests
-An automated test suite is provided in `server/src/test/verify-rbac.ts` testing all 12 test matrix combinations:
-
-```bash
-cd server
-npm run test:rbac
-```
-
----
-
-## Application Routing & Page Architecture (Step 7)
-
-### Route Architecture & Protection Matrix
-
-The frontend uses React Router to provide client-side navigation with layout hierarchies and role-based route guards.
-
-```text
-Application Router
-│
-├── Public Routes (Accessible to all users)
-│   ├── /                 → HomePage (Hero, features, CTA)
-│   ├── /about            → AboutPage (Mission & platform model)
-│   ├── /charities        → CharitiesPage (Charity listings scaffold)
-│   ├── /draws            → DrawsPage (Lottery draws schedule scaffold)
-│   ├── /login            → LoginPage (Composes existing LoginForm)
-│   ├── /signup           → SignupPage (Composes existing SignupForm)
-│   └── /unauthorized     → UnauthorizedPage (403 UX feedback)
-│
-├── Authenticated Routes (ProtectedRoute — Redirects to /login if unauthenticated)
-│   ├── /dashboard        → DashboardPage (User overview & quick links)
-│   └── /profile          → ProfilePage (UserProfileCard with token & live RBAC test tools)
-│
-├── Subscriber Routes (RoleRoute allowedRoles=['subscriber', 'admin'])
-│   ├── /subscription     → SubscriptionPage (Plan details scaffold)
-│   ├── /my-entries       → MyEntriesPage (Active draw entries scaffold)
-│   └── /my-winnings      → MyWinningsPage (Prize payouts scaffold)
-│
-├── Admin Routes (RoleRoute allowedRoles=['admin'] + AdminLayout)
-│   ├── /admin            → AdminDashboardPage (System overview scaffold)
-│   ├── /admin/users      → AdminUsersPage (User directory scaffold)
-│   ├── /admin/charities  → AdminCharitiesPage (Charity management scaffold)
-│   ├── /admin/draws      → AdminDrawsPage (Draw operations scaffold)
-│   ├── /admin/winners    → AdminWinnersPage (Winner audits scaffold)
-│   └── /admin/payouts    → AdminPayoutsPage (Payout batch processing scaffold)
-│
-└── Error Catch-All Route
-    └── *                 → NotFoundPage (404 Not Found)
-```
-
-### Route Protection Components
-* **`ProtectedRoute`**: Reusable guard verifying authentication via `useAuth()`. Shows accessible loading spinner during initial session hydration and redirects unauthenticated users to `/login` with preserved target location (`state: { from: location }`).
-* **`RoleRoute`**: Role-based guard verifying `allowedRoles: UserRole[]`. Redirects unauthenticated users to `/login` and authenticated users with insufficient permissions to `/unauthorized`.
-* **Important Security Note**: Frontend route guards serve purely as UX routing controls. All real security boundaries reside on the Express backend via `requireAuth` and `requireRole` middleware.
-
-### Layout Hierarchy
-* **`AppLayout`**: Wraps the application with a responsive `Header` (with desktop links, role-aware dropdowns, accessible mobile drawer) and standard `Footer`.
-* **`AdminLayout`**: Nested layout specifically for admin routes providing portal breadcrumbs and sub-navigation tabs (Overview, Users, Charities, Draws, Winners, Payouts).
-
-### API Client Foundation (`client/src/lib/api.ts`)
-* Reusable `api.get()`, `api.post()`, `api.put()`, `api.delete()` helper functions that automatically read the current Supabase session token (`supabase.auth.getSession()`) and attach `Authorization: Bearer <token>` to requests against `VITE_API_URL`.
-
----
-
-## Environment & Configuration Management (Step 8)
-
-### Configuration Architecture
-The application uses strict, centralized environment modules on both client and server:
-
-```text
-Backend Execution
-  │
-  ▼
-server/src/config/env.ts
-  ├─ Validates PORT, NODE_ENV, CLIENT_URL, SUPABASE_URL, SUPABASE_SECRET_KEY, DATABASE_URL
-  ├─ Validates port bounds (1-65535) and URL protocols
-  ├─ Fails fast at startup if configuration is missing or malformed
-  └─ Exports typed `env` (never prints secrets in logs)
-
-Frontend Execution
-  │
-  ▼
-client/src/config/env.ts
-  ├─ Validates VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY, VITE_API_URL
-  ├─ Fails fast if required public variables are missing
-  └─ Exports typed `config` (consumed by supabase.ts, api.ts, AuthContext.tsx)
-```
-
-### Environment Variables Matrix
-
-| Variable | Scope | Secret | Required | Description | Example / Default |
-|---|:---:|:---:|:---:|---|---|
-| `PORT` | Backend | No | Optional | Express server HTTP listen port | `5000` |
-| `NODE_ENV` | Backend | No | Optional | Runtime environment mode | `development` / `production` / `test` |
-| `CLIENT_URL` | Backend | No | Optional | Allowed CORS origin(s) | `http://localhost:5173` |
-| `SUPABASE_URL` | Backend | No | **YES** | Supabase project API URL | `https://your-project.supabase.co` |
-| `SUPABASE_SECRET_KEY` | Backend | **YES** | **YES** | Privileged service role secret key | `your_supabase_secret_key` |
-| `DATABASE_URL` | Backend | **YES** | **YES** | Direct PostgreSQL connection string | `postgresql://postgres:...` |
-| `VITE_SUPABASE_URL` | Frontend | No | **YES** | Public Supabase project API URL | `https://your-project.supabase.co` |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Frontend | No | **YES** | Browser publishable key | `your_publishable_key` |
-| `VITE_API_URL` | Frontend | No | Optional | Base URL for backend Express endpoints | `http://localhost:5000/api` |
-
-### Security & Secret Isolation Rules
-1. **Never Expose Backend Secrets**: `SUPABASE_SECRET_KEY` and `DATABASE_URL` are strictly server-only. They must never be prefixed with `VITE_`, imported into frontend code, or bundled in browser assets.
-2. **Git Protection**: `.gitignore` strictly ignores all `.env`, `.env.local`, `client/.env*`, and `server/.env*` files containing secrets while tracking `.env.example` templates.
-3. **Automated Bundle Auditing**: Production builds are automatically audited by `server/src/test/verify-config.ts` to guarantee zero occurrences of backend secrets in `client/dist/`.
-
-### Vercel Deployment Settings
-When deploying to Vercel:
-* **Frontend Project Settings**:
-  * Set `VITE_SUPABASE_URL`
-  * Set `VITE_SUPABASE_PUBLISHABLE_KEY`
-  * Set `VITE_API_URL` to your production backend URL (e.g. `https://api.yourdomain.com/api`)
-* **Backend Project Settings / Serverless**:
-  * Set `PORT` (or let platform assign)
-  * Set `NODE_ENV=production`
-  * Set `CLIENT_URL` to your production frontend URL (e.g. `https://yourdomain.com`)
-  * Set `SUPABASE_URL`
-  * Set `SUPABASE_SECRET_KEY`
-  * Set `DATABASE_URL`
-
-### Running Configuration Verification Tests
-To run the 9-point environment validation and codebase/bundle secret audit:
-
-```bash
-cd server
-npm run test:config
-```
-
----
-
-## Production Deployment & Vercel Setup (Step 9)
-
-See [Production Deployment Guide](file:///d:/shivam/projects/dgital-hero/docs/deployment.md) for full instructions.
-
-### Deployment Overview
-The project is configured for seamless deployment:
-1. **Frontend**: Deployed to Vercel as a Vite SPA.
-   - **Root Directory**: `client`
-   - **Build Command**: `npm run build`
-   - **Output Directory**: `dist`
-   - **SPA Routing**: `client/vercel.json` rewrites all client requests to `/index.html` preventing 404s on browser refresh or direct navigation.
-2. **Backend**: Dual-mode production ready:
-   - **Vercel Serverless Function**: Uses zero-overhead adapter `server/api/index.ts` with `server/vercel.json` rewrites. Automatically disables `httpServer.listen(...)` in serverless runtime.
-   - **Standalone Node.js Host**: Standard persistent server via `npm start` (`node dist/server.js`) on Render, Railway, Fly.io, or AWS.
-3. **Database & Auth**: Supabase PostgreSQL with pooled connections and Supabase Auth triggers.
-
-### Key Deployment Files
-* [`client/vercel.json`](file:///d:/shivam/projects/dgital-hero/client/vercel.json): Vercel SPA routing rewrite rules for client-side React Router navigation.
-* [`server/api/index.ts`](file:///d:/shivam/projects/dgital-hero/server/api/index.ts): Serverless function entrypoint adapter exporting Express app.
-* [`server/vercel.json`](file:///d:/shivam/projects/dgital-hero/server/vercel.json): Vercel routing configuration for serverless backend execution.
-* [`docs/deployment.md`](file:///d:/shivam/projects/dgital-hero/docs/deployment.md): Complete end-to-end production deployment guide and checklist.
-
-### Regression & Verification Commands
-```bash
-# Frontend build verification
-cd client
-npm run lint
-npm run build
-
-# Backend verification test suite
-cd ../server
-npm run build
-npm run test:config     # Configuration & secret leakage test suite (PASS)
-npm run test:auth       # 12-point authentication test suite (PASS)
-npm run test:rbac       # 12-point RBAC authorization test suite (PASS)
-npm run test:schema     # Verifies all 8 database tables exist in Supabase (PASS)
-```
-
+* **No Passwords in `public.users`**: Passwords reside strictly in encrypted Supabase Auth storage.
+* **Server-Authoritative RBAC**: Roles are retrieved directly from `public.users.role` on every authenticated request.
+* **Zero Secret Leakage**: Service role keys and database URLs are never shipped to client bundles or committed to version control.

@@ -134,8 +134,8 @@ The Express backend implements origin-restricted CORS:
 
 ### Database Migrations Verification
 Ensure that migrations from Steps 4 & 5 are applied to the target production Supabase database:
-- `supabase/migrations/20260327000001_initial_schema.sql` (8 core tables & constraints)
-- `supabase/migrations/20260327000002_auth_trigger.sql` (Auth sync trigger)
+- `supabase/migrations/20260921180000_initial_schema.sql` (8 core tables & constraints)
+- `supabase/migrations/20260921183000_auth_user_trigger.sql` (Auth sync trigger)
 
 Verify schema integrity using:
 ```bash
@@ -160,6 +160,9 @@ ALL 8 REQUIRED TABLES EXIST: PASS
 ---
 
 ## 6. Health & Smoke Testing
+
+### Deployment Status Note
+Deployment configuration is fully prepared in the repository (`client/vercel.json`, `server/vercel.json`, `server/api/index.ts`). Production deployment to your live cloud account must be verified separately once linked to your Vercel Dashboard / Git provider.
 
 ### Health Check Endpoint
 ```http
@@ -212,3 +215,19 @@ npm run test:auth       # 12-point authentication test suite
 npm run test:rbac       # 12-point RBAC authorization test suite
 npm run test:schema     # Verifies all 8 database tables
 ```
+
+---
+
+## 8. Rollback Considerations
+
+1. **Frontend Rollback**:
+   - Vercel automatically maintains deployment history with immutable preview URLs for every commit.
+   - In the event of a frontend regression, instantly roll back to the previously passing deployment with zero downtime via **Vercel Dashboard > Deployments > Promote to Production**.
+2. **Backend Rollback**:
+   - For Vercel Serverless deployments: Roll back to previous serverless deployment instantly via Vercel Dashboard.
+   - For Standalone Node.js hosting (Render / Railway / Fly.io): Re-deploy previous commit SHA or rollback release in the platform console.
+3. **Database Schema Considerations**:
+   - Migrations are additive and backward-compatible.
+   - Never run destructive rollback scripts (e.g. `DROP TABLE`) against live production data.
+   - Database connection pools (`pg.Pool`) automatically recover upon backend restart.
+
