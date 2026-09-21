@@ -418,3 +418,43 @@ cd server
 npm run test:config
 ```
 
+---
+
+## Production Deployment & Vercel Setup (Step 9)
+
+See [Production Deployment Guide](file:///d:/shivam/projects/dgital-hero/docs/deployment.md) for full instructions.
+
+### Deployment Overview
+The project is configured for seamless deployment:
+1. **Frontend**: Deployed to Vercel as a Vite SPA.
+   - **Root Directory**: `client`
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
+   - **SPA Routing**: `client/vercel.json` rewrites all client requests to `/index.html` preventing 404s on browser refresh or direct navigation.
+2. **Backend**: Dual-mode production ready:
+   - **Vercel Serverless Function**: Uses zero-overhead adapter `server/api/index.ts` with `server/vercel.json` rewrites. Automatically disables `httpServer.listen(...)` in serverless runtime.
+   - **Standalone Node.js Host**: Standard persistent server via `npm start` (`node dist/server.js`) on Render, Railway, Fly.io, or AWS.
+3. **Database & Auth**: Supabase PostgreSQL with pooled connections and Supabase Auth triggers.
+
+### Key Deployment Files
+* [`client/vercel.json`](file:///d:/shivam/projects/dgital-hero/client/vercel.json): Vercel SPA routing rewrite rules for client-side React Router navigation.
+* [`server/api/index.ts`](file:///d:/shivam/projects/dgital-hero/server/api/index.ts): Serverless function entrypoint adapter exporting Express app.
+* [`server/vercel.json`](file:///d:/shivam/projects/dgital-hero/server/vercel.json): Vercel routing configuration for serverless backend execution.
+* [`docs/deployment.md`](file:///d:/shivam/projects/dgital-hero/docs/deployment.md): Complete end-to-end production deployment guide and checklist.
+
+### Regression & Verification Commands
+```bash
+# Frontend build verification
+cd client
+npm run lint
+npm run build
+
+# Backend verification test suite
+cd ../server
+npm run build
+npm run test:config     # Configuration & secret leakage test suite (PASS)
+npm run test:auth       # 12-point authentication test suite (PASS)
+npm run test:rbac       # 12-point RBAC authorization test suite (PASS)
+npm run test:schema     # Verifies all 8 database tables exist in Supabase (PASS)
+```
+

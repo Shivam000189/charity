@@ -75,7 +75,7 @@ app.get(['/', '/api'], (_req: Request, res: Response) => {
   });
 });
 
-if (process.env.NODE_ENV !== 'test' && env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV !== 'test' && env.NODE_ENV !== 'test' && !process.env.VERCEL) {
   httpServer.listen(PORT, async () => {
     console.log(`Server listening at http://localhost:${PORT}`);
     const isDbConnected = await checkDatabaseConnection();
@@ -104,3 +104,6 @@ const gracefulShutdown = async () => {
 
 process.on('SIGTERM', gracefulShutdown);
 process.on('SIGINT', gracefulShutdown);
+
+export default app;
+

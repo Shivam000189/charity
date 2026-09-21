@@ -111,10 +111,11 @@ async function runVerification() {
       ON CONFLICT (id) DO NOTHING;
     `, [testUserId]);
 
-    // Insert user
+    // Update user created by auth trigger
     await client.query(`
       INSERT INTO public.users (id, email, name, role)
-      VALUES ($1, 'Test@Example.COM', 'Test User', 'subscriber');
+      VALUES ($1, 'Test@Example.COM', 'Test User', 'subscriber')
+      ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, name = EXCLUDED.name, role = EXCLUDED.role;
     `, [testUserId]);
 
     // Test email case-insensitive uniqueness
@@ -128,9 +129,11 @@ async function runVerification() {
         ON CONFLICT (id) DO NOTHING;
       `, [testUserId2]);
 
+      // Attempt to set email to case-insensitive collision with test@example.com
       await client.query(`
-        INSERT INTO public.users (id, email, name, role)
-        VALUES ($1, 'TEST@example.com', 'Test User 2', 'visitor');
+        UPDATE public.users
+        SET email = 'TEST@example.com'
+        WHERE id = $1;
       `, [testUserId2]);
     } catch {
       duplicateEmailFailed = true;
@@ -256,7 +259,8 @@ async function runVerification() {
         ON CONFLICT (id) DO NOTHING;
       `, [testUserId3]);
       await client.query(`
-        INSERT INTO public.users (id, email, name) VALUES ($1, 'Test 3', 'User 3');
+        INSERT INTO public.users (id, email, name) VALUES ($1, 'Test 3', 'User 3')
+        ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, name = EXCLUDED.name;
       `, [testUserId3]);
       const entry3 = await client.query(`
         INSERT INTO public.draw_entries (draw_id, user_id) VALUES ($1, $2) RETURNING id;
