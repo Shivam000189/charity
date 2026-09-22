@@ -72,23 +72,81 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signUp = async (email: string, password: string, name: string) => {
     setError(null);
     try {
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name,
+      // 1. Register through backend to bypass Supabase free email rate limits & auto-confirm email
+      let backendSuccess = false;
+      try {
+        const response = await fetch(`${API_URL}/auth/signup`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
-        },
-      });
+          body: JSON.stringify({ email, password, name }),
+        });
 
-      if (signUpError) {
-        setError(signUpError.message);
-        return { success: false, error: signUpError.message };
+        const resData = await response.json();
+        if (response.ok && resData.success) {
+          backendSuccess = true;
+        } else if (resData.message) {
+          setError(resData.message);
+          return { success: false, error: resData.message };
+        }
+      } catch (backendErr) {
+        console.warn('Backend signup request failed, falling back to direct Supabase:', backendErr);
       }
 
-      if (data.session?.access_token) {
-        await fetchProfileFromBackend(data.session.access_token);
+      // 2. Direct fallback if backend was unavailable
+      if (!backendSuccess) {
+        const { error: directError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              name,
+            },
+          },
+        });
+
+        if (directError) {
+          setError(directError.message);
+          return { success: false, error: directError.message };
+        }
+      }
+
+      // 3. Automatically sign in to establish full authenticated session
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) {
+        if (signInError.message.toLowerCase().includes('not confirmed')) {
+          try {
+            await fetch(`${API_URL}/auth/confirm`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email }),
+            });
+            const retry = await supabase.auth.signInWithPassword({ email, password });
+            if (retry.error) {
+              setError(retry.error.message);
+              return { success: false, error: retry.error.message };
+            }
+            if (retry.data.session?.access_token) {
+              await fetchProfileFromBackend(retry.data.session.access_token);
+            }
+            return { success: true };
+          } catch {
+            setError(signInError.message);
+            return { success: false, error: signInError.message };
+          }
+        }
+
+        setError(signInError.message);
+        return { success: false, error: signInError.message };
+      }
+
+      if (signInData.session?.access_token) {
+        await fetchProfileFromBackend(signInData.session.access_token);
       }
 
       return { success: true };
@@ -102,10 +160,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     setError(null);
     try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      let { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
+
+      // Handle unconfirmed email gracefully by auto-confirming via backend and retrying
+      if (signInError && signInError.message.toLowerCase().includes('not confirmed')) {
+        try {
+          await fetch(`${API_URL}/auth/confirm`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email }),
+          });
+
+          const retry = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          data = retry.data;
+          signInError = retry.error;
+        } catch (confirmErr) {
+          console.error('Auto-confirm attempt failed:', confirmErr);
+        }
+      }
 
       if (signInError) {
         setError(signInError.message);

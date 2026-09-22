@@ -3,6 +3,8 @@ import { requireAuth } from '../middleware/auth.middleware';
 import { requireAdmin, requireSubscriber } from '../middleware/role.middleware';
 import {
   getMe,
+  registerUser,
+  confirmUser,
   testAuthenticated,
   testSubscriber,
   testAdmin,
@@ -10,6 +12,8 @@ import {
 
 const router = Router();
 
+router.post('/signup', registerUser);
+router.post('/confirm', confirmUser);
 router.get('/me', requireAuth, getMe);
 
 // Authorization test routes
