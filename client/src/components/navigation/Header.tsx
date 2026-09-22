@@ -22,29 +22,26 @@ export const Header: React.FC = () => {
   };
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+    `px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
       isActive
-        ? 'bg-purple-600 text-white shadow-sm shadow-purple-600/20'
-        : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
+        ? 'bg-purple-600 text-white shadow-sm shadow-purple-600/30'
+        : 'text-slate-300 hover:text-white hover:bg-white/5'
     }`;
 
   const isSubscriber = hasAccess || profile?.role === 'admin';
   const isAdmin = profile?.role === 'admin';
 
   return (
-    <header className="sticky top-0 z-40 bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
-      <div className="container mx-auto px-4 max-w-7xl">
-        <div className="flex items-center justify-between h-16">
+    <header className="sticky top-0 z-40 bg-transparent py-2">
+      <div className="container mx-auto px-4 max-w-6xl">
+        <div className="flex items-center justify-between h-14">
           {/* Brand Logo */}
           <div className="flex items-center gap-8">
             <Link
               to={ROUTES.HOME}
-              className="text-lg sm:text-xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 rounded-lg"
+              className="text-lg sm:text-xl font-bold tracking-tight text-white flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 rounded-lg"
             >
-              <span className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center font-black text-base shadow-sm">
-                D
-              </span>
-              <span>Digital Hero</span>
+              Digital Hero
             </Link>
 
             {/* Desktop Public & Nav */}
@@ -64,7 +61,7 @@ export const Header: React.FC = () => {
 
               {user && (
                 <>
-                  <span className="text-slate-300 dark:text-slate-700 px-1">|</span>
+                  <span className="text-slate-600 px-1">|</span>
                   <NavLink to={ROUTES.DASHBOARD} className={navLinkClass}>
                     Dashboard
                   </NavLink>
@@ -87,14 +84,14 @@ export const Header: React.FC = () => {
 
               {isAdmin && (
                 <>
-                  <span className="text-slate-300 dark:text-slate-700 px-1">|</span>
+                  <span className="text-slate-600 px-1">|</span>
                   <NavLink
                     to={ROUTES.ADMIN}
                     className={({ isActive }) =>
-                      `px-3 py-2 rounded-xl text-xs font-extrabold transition-colors ${
+                      `px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors ${
                         isActive
                           ? 'bg-purple-600 text-white shadow-sm'
-                          : 'text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/50'
+                          : 'text-purple-400 hover:bg-purple-950/50'
                       }`
                     }
                   >
@@ -106,36 +103,36 @@ export const Header: React.FC = () => {
           </div>
 
           {/* Desktop Right Side CTA / Auth */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-4">
             {user ? (
               <div className="flex items-center gap-3">
                 <Link
                   to={ROUTES.PROFILE}
-                  className="text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+                  className="text-xs font-semibold text-slate-300 hover:text-purple-400 transition-colors"
                 >
                   {profile?.name || user.email?.split('@')[0]}
-                  <span className="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase bg-slate-100 dark:bg-slate-800 text-slate-500">
+                  <span className="ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase bg-slate-800 text-slate-400 border border-slate-700/50">
                     {profile?.role || 'visitor'}
                   </span>
                 </Link>
                 <button
                   onClick={handleSignOut}
-                  className="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-700/60 hover:bg-white/10 text-slate-300 hover:text-rose-400 transition-colors cursor-pointer"
                 >
                   Sign Out
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-4">
                 <Link
                   to={ROUTES.LOGIN}
-                  className="px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-purple-600 transition-colors"
+                  className="text-xs font-medium text-slate-300 hover:text-white transition-colors"
                 >
                   Sign In
                 </Link>
                 <Link
                   to={ROUTES.SIGNUP}
-                  className="px-4 py-2 text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow-sm shadow-purple-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  className="px-4 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-500 text-white rounded-full shadow-sm shadow-purple-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
                 >
                   Get Started
                 </Link>
@@ -167,7 +164,7 @@ export const Header: React.FC = () => {
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 pt-2 pb-6 space-y-2 animate-fade-in">
+        <div className="md:hidden border-b border-slate-800 bg-[#1c1d27]/95 backdrop-blur-md px-4 pt-2 pb-6 space-y-2 animate-fade-in shadow-2xl">
           <NavLink
             to={ROUTES.HOME}
             className={({ isActive }) =>

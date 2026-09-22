@@ -41,20 +41,17 @@ export const CharitySpotlight: React.FC = () => {
   // Fallback if no charity is marked as featured
   if (!featuredCharity) {
     return (
-      <div className="w-full bg-gradient-to-r from-purple-950/40 via-indigo-950/30 to-purple-950/40 rounded-3xl p-8 border border-purple-800/30 text-center space-y-4 shadow-sm">
-        <span className="px-3 py-1 bg-purple-500/10 text-purple-400 text-xs font-bold rounded-full uppercase tracking-wider border border-purple-500/20">
-          Transparent Community Giving
-        </span>
-        <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+      <div className="w-full bg-[#25153f] rounded-2xl sm:rounded-3xl p-8 sm:p-12 border border-purple-900/40 text-center space-y-3.5 shadow-xl">
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight">
           Discover Verified Non-Profit Partners
         </h2>
-        <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-xl mx-auto leading-relaxed">
+        <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto leading-relaxed">
           Every monthly subscriber contribution funds grassroots charities across environmental preservation, healthcare access, animal welfare, and youth education.
         </p>
         <div className="pt-2">
           <Link
             to={ROUTES.CHARITIES}
-            className="inline-flex items-center gap-2 px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="inline-flex items-center gap-2 px-6 py-2.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl shadow-[0_0_20px_rgba(147,51,234,0.4)] transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             Explore Charity Directory &rarr;
           </Link>
